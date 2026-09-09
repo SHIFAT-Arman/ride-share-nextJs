@@ -1,5 +1,10 @@
 import api from "../lib/axios";
-import { Admin, AdminFilterParams, Announcement, AnnouncementListResponse } from "@/types/admin";
+import {
+  Admin,
+  AdminFilterParams,
+  Announcement,
+  AnnouncementListResponse,
+} from "@/types/admin";
 
 export interface AdminListResponse {
   data: Admin[];
@@ -13,7 +18,6 @@ export interface AdminListResponse {
 export interface LoginRequest {
   email: string;
   password: string;
-  userType: "admin";
 }
 
 export interface RegisterRequest {
@@ -44,10 +48,9 @@ export const adminApi = {
   getAll: (filter: Partial<AdminFilterParams> = {}) =>
     api.get<Admin[]>("/admin/admin-list", { params: filter }),
 
-  getAdminList: (limit: number = 100) =>
-    api.get<Admin[]>("/admin/admin-list", { params: { limit } }),
-
   login: (data: LoginRequest) => api.post<LoginResponse>("/auth/login", data),
+
+  logout: () => api.post("/auth/logout"),
 
   register: (data: RegisterRequest) =>
     api.post<Admin>("/auth/register/admin", data),
