@@ -95,7 +95,7 @@ export default function AdminRegisterPage() {
     setLoading(true);
     try {
       await adminApi.register(result.data);
-      router.push("/admin/login");
+      router.push("/login");
     } catch (err: unknown) {
       const axiosErr = err as {
         response?: {

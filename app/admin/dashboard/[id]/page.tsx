@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Shield } from "lucide-react";
 import { adminApi } from "@/api/admins";
@@ -15,7 +15,6 @@ import { AdminDetailSkeleton } from "@/components/admin-detail/AdminDetailSkelet
 
 export default function AdminDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const router = useRouter();
   const [admin, setAdmin] = useState<Admin | null>(null);
   const [error, setError] = useState("");
 
@@ -27,13 +26,8 @@ export default function AdminDetailPage() {
   };
 
   useEffect(() => {
-    if (!localStorage.getItem("adminToken")) {
-      router.push("/admin/login");
-      return;
-    }
     loadAdmin();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, router]);
+  }, [id]);
 
   const adminName = admin?.profile
     ? `${admin.profile.firstName} ${admin.profile.lastName}`

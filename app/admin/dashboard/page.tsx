@@ -1,13 +1,13 @@
+// app/admin/dashboard/page.tsx
 "use client";
-
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { adminApi } from "@/api/admins";
 import { Admin } from "@/types/admin";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { DashboardToolbar } from "@/components/dashboard/DashboardToolbar";
 import { AdminStats } from "@/components/dashboard/AdminStats";
 import { AdminTable } from "@/components/dashboard/AdminTable";
+import { useRouter } from "next/navigation";
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -17,12 +17,10 @@ export default function AdminDashboardPage() {
   const [error, setError] = useState("");
 
   const fetchAdmins = async (isRefresh = false) => {
-    if (isRefresh) setRefreshing(true);
-    else setLoading(true);
+    isRefresh ? setRefreshing(true) : setLoading(true);
     setError("");
-
     try {
-      const res = await adminApi.getAdminList(100);
+      const res = await adminApi.getAll({ limit: 100 }); // hardcoded limit
       const raw = res.data as unknown;
       const list: Admin[] = Array.isArray(raw)
         ? raw
@@ -30,38 +28,27 @@ export default function AdminDashboardPage() {
           ? (raw as { data: Admin[] }).data
           : [];
       setAdmins(list);
-    } catch (err: unknown) {
-      const axiosErr = err as { response?: { status?: number } };
-      if (axiosErr?.response?.status === 401) {
-        localStorage.removeItem("adminToken");
-        router.push("/admin/login");
-        return;
-      }
+    } catch {
       setError("Failed to load admin list. Please try again.");
+      // 401 case: already handled — api.ts interceptor redirects
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("adminToken");
+  const handleLogout = async () => {
+    await adminApi.logout(); // backend clears the cookie server-side
     router.push("/admin/login");
   };
 
   useEffect(() => {
-    if (!localStorage.getItem("adminToken")) {
-      router.push("/admin/login");
-      return;
-    }
     fetchAdmins();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white">
       <DashboardHeader onLogout={handleLogout} />
-
       <main className="px-8 py-8 max-w-7xl mx-auto">
         <DashboardToolbar
           count={admins.length}
@@ -69,9 +56,7 @@ export default function AdminDashboardPage() {
           refreshing={refreshing}
           onRefresh={() => fetchAdmins(true)}
         />
-
         <AdminStats admins={admins} loading={loading} />
-
         <AdminTable
           admins={admins}
           loading={loading}

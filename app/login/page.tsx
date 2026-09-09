@@ -53,14 +53,14 @@ export default function AdminLoginPage() {
     try {
       const response = await adminApi.login({
         ...result.data,
-        userType: "admin",
       });
-      localStorage.setItem("adminToken", response.data.access_token);
+
       router.push("/admin/dashboard");
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } };
       setServerError(
-        axiosErr?.response?.data?.message ?? "Invalid credentials. Please try again."
+        axiosErr?.response?.data?.message ??
+          "Invalid credentials. Please try again.",
       );
     } finally {
       setLoading(false);
