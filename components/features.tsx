@@ -11,7 +11,7 @@ export default function Features() {
   return (
     <section
       aria-label="Why choose us"
-      className="grid items-center overflow-hidden gap-10 px-6 py-16 md:grid-cols-2 md:gap-12 md:px-12"
+      className="grid items-center overflow-hidden w-full max-w-7xl mx-auto gap-10 px-6 py-16 md:grid-cols-2 md:gap-12 md:px-12"
     >
       <div className="text-[#eef3fb]">
         <h2 className="text-3xl font-mono font-bold tracking-tight md:text-3xl lg:text-7xl">
