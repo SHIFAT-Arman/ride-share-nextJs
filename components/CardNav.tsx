@@ -37,7 +37,7 @@ const CardNav: React.FC<CardNavProps> = ({
   items,
   className = "",
   ease = "power3.out",
-  baseColor = "#fff",
+  baseColor = "#05060a",
   menuColor,
   buttonBgColor,
   buttonTextColor,
@@ -205,8 +205,8 @@ const CardNav: React.FC<CardNavProps> = ({
                 src={logo}
                 alt={logoAlt}
                 className="logo"
-                width={70}
-                height={70}
+                width={52}
+                height={52}
                 loading="eager"
               />
             </Link>
