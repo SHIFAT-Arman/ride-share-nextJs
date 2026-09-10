@@ -3,7 +3,6 @@
 import Link from "next/link";
 import GhostFibers from "./GhostFibers";
 import TrueFocus from "./TrueFocus";
-import { Button } from "./ui/button";
 import SpecularButton from "./SpecularButton";
 
 /**
@@ -11,7 +10,7 @@ import SpecularButton from "./SpecularButton";
  * 1) GhostFibers fills the background (roads / routes vibe)
  * 2) TrueFocus + short copy + CTA sit on top
  */
-export default function Hero() {
+export default function Hero(props: { sloganL1: string; sloganL2: string }) {
   return (
     <section className="relative min-h-svh w-full overflow-hidden bg-[#070b14] text-[#eef3fb]">
       {/* Layer 1: full-bleed animated background */}
@@ -22,8 +21,9 @@ export default function Hero() {
       {/* Layer 2: brand + one sentence + one action */}
 
       <div className="relative z-10 flex min-h-svh flex-col items-center justify-center gap-6 px-6 pt-24 pb-16 text-center">
-        <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-[#eef3fb] text-center">
-          Seamless Travels <br /> Fair prices
+        <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-[#eef3fb] text-center ">
+          {props.sloganL1} <br />
+          {props.sloganL2}
         </h1>
 
         <TrueFocus
