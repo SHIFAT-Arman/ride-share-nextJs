@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import CardNav from "@/components/CardNav";
 import logo from "@/public/car-logo.svg";
 import { navItems } from "@/config/nav-items";
+import Footer from "@/components/Footer";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -48,6 +49,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           ease="elastic.out(1, 0.8)"
         />
         {children}
+        <Footer />
       </body>
     </html>
   );
