@@ -1,4 +1,10 @@
-import DepthCarousel from "./DepthCarousel";
+"use client";
+
+import dynamic from "next/dynamic";
+
+const DepthCarousel = dynamic(() => import("./DepthCarousel"), {
+  loading: () => <div className="h-full min-h-80 w-full max-w-2xl" />,
+});
 
 export default function Features() {
   const images = [

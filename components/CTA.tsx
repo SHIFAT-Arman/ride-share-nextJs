@@ -1,8 +1,15 @@
+"use client";
+
+import dynamic from "next/dynamic";
 import Link from "next/link";
-import PixelBlast from "./PixelBlast";
+import { useInView } from "@/hooks/useInView";
 import SpecularButton from "./SpecularButton";
 
+const PixelBlast = dynamic(() => import("./PixelBlast"), { ssr: false });
+
 export default function CTA() {
+  const { ref, inView } = useInView();
+
   return (
     <section className="grid grid-cols-1 gap-6 px-6 py-8 md:grid-cols-2 max-w-7xl w-full mx-auto">
       <div className="flex flex-col items-center justify-center gap-6">
@@ -37,26 +44,28 @@ export default function CTA() {
           </p>
         </div>
       </div>
-      <div>
-        <PixelBlast
-          variant="circle"
-          pixelSize={4}
-          color="#1E91D6"
-          patternScale={2}
-          patternDensity={1}
-          pixelSizeJitter={0}
-          enableRipples
-          rippleSpeed={0.4}
-          rippleThickness={0.12}
-          rippleIntensityScale={1.5}
-          liquid={false}
-          liquidStrength={0.12}
-          liquidRadius={1.2}
-          liquidWobbleSpeed={5}
-          speed={0.5}
-          edgeFade={0.25}
-          transparent
-        />
+      <div ref={ref} className="min-h-80 h-full w-full">
+        {inView ? (
+          <PixelBlast
+            variant="circle"
+            pixelSize={4}
+            color="#1E91D6"
+            patternScale={2}
+            patternDensity={1}
+            pixelSizeJitter={0}
+            enableRipples
+            rippleSpeed={0.4}
+            rippleThickness={0.12}
+            rippleIntensityScale={1.5}
+            liquid={false}
+            liquidStrength={0.12}
+            liquidRadius={1.2}
+            liquidWobbleSpeed={5}
+            speed={0.5}
+            edgeFade={0.25}
+            transparent
+          />
+        ) : null}
       </div>
     </section>
   );

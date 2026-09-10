@@ -1,9 +1,14 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
-import GhostFibers from "./GhostFibers";
 import TrueFocus from "./TrueFocus";
 import SpecularButton from "./SpecularButton";
+
+const GhostFibers = dynamic(() => import("./GhostFibers"), {
+  ssr: false,
+  loading: () => null,
+});
 
 /**
  * Hero = one full screen:

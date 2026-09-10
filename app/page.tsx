@@ -3,12 +3,14 @@ import FAQ from "@/components/FAQ";
 import FeatureCards from "@/components/FeatureCards";
 import Features from "@/components/Features";
 import Hero from "@/components/Hero";
+import HomeSplash from "@/components/HomeSplash";
 import LogoSection from "@/components/LogoSection";
 import Testimonials from "@/components/Testimonials";
 
 export default function Home() {
   return (
     <>
+      <HomeSplash />
       <Hero sloganL1="Seamless Travels" sloganL2="Fair prices" />
       <LogoSection />
       <Features />
