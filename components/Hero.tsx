@@ -20,8 +20,8 @@ export default function Hero(props: { sloganL1: string; sloganL2: string }) {
 
       {/* Layer 2: brand + one sentence + one action */}
 
-      <div className="relative z-10 flex min-h-svh flex-col items-center justify-center gap-6 px-6 pt-24 pb-16 text-center">
-        <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-[#eef3fb] text-center ">
+      <div className="font-mono relative z-10 flex min-h-svh flex-col items-center justify-center gap-6 px-6 pt-24 pb-16 text-center">
+        <h1 className="hidden md:block text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-[#eef3fb] text-center ">
           {props.sloganL1} <br />
           {props.sloganL2}
         </h1>

@@ -53,7 +53,7 @@ export default function LogoSection() {
       aria-label="Technology partners"
       className="w-full min-w-0 py-16 px-6 max-w-7xl mx-auto text-white relative overflow-hidden"
     >
-      <h2 className="text-3xl font-mono font-bold tracking-tight md:text-3xl lg:text-7xl text-center mb-8">
+      <h2 className="text-4xl font-mono font-bold tracking-tight md:text-3xl lg:text-7xl text-center mb-8">
         Technologies we use
       </h2>
         {/* Basic horizontal loop */}

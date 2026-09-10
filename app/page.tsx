@@ -2,6 +2,7 @@ import FeatureCards from "@/components/FeatureCards";
 import Features from "@/components/Features";
 import Hero from "@/components/Hero";
 import LogoSection from "@/components/LogoSection";
+import Testimonials from "@/components/Testimonials";
 
 export default function Home() {
   return (
@@ -10,6 +11,7 @@ export default function Home() {
       <LogoSection />
       <Features />
       <FeatureCards />
+      <Testimonials />
     </>
   );
 }
