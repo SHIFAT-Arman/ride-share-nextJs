@@ -1,6 +1,7 @@
-import Features from "@/components/features";
-import Hero from "@/components/hero";
-import LogoSection from "@/components/logoSection";
+import FeatureCards from "@/components/FeatureCards";
+import Features from "@/components/Features";
+import Hero from "@/components/Hero";
+import LogoSection from "@/components/LogoSection";
 
 export default function Home() {
   return (
@@ -8,6 +9,7 @@ export default function Home() {
       <Hero sloganL1="Seamless Travels" sloganL2="Fair prices" />
       <LogoSection />
       <Features />
+      <FeatureCards />
     </>
   );
 }
