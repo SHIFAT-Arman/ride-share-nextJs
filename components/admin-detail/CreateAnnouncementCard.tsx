@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 
-export function CreateAnnouncementCard() {
+export function CreateAnnouncementCard({ onCreated }: { onCreated?: () => void }) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
@@ -23,8 +23,9 @@ export function CreateAnnouncementCard() {
       setIsError(false);
       setTitle("");
       setContent("");
+      onCreated?.();
     } catch {
-      setMessage("Failed to publish. Please try again.");
+      setMessage("Could not publish. Try again.");
       setIsError(true);
     } finally {
       setLoading(false);
@@ -32,30 +33,30 @@ export function CreateAnnouncementCard() {
   };
 
   return (
-    <div className="rounded-2xl border border-white/8 bg-white/3 p-6">
-      <h3 className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-5">
-        Create Announcement
+    <div className="rounded-2xl border border-sky-800/40 bg-sky-950/40 p-6">
+      <h3 className="mb-5 text-xs font-semibold tracking-wider text-sky-200/50 uppercase">
+        Create announcement
       </h3>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-1.5">
-          <Label className="text-white/50 text-xs uppercase tracking-wider">Title</Label>
+          <Label className="text-xs tracking-wider text-sky-200/50 uppercase">Title</Label>
           <Input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. Important Announcement"
-            className="bg-white/5 border-white/10 text-white placeholder:text-white/20 h-10"
+            placeholder="e.g. Fare change tonight"
+            className="h-10 border-sky-800/50 bg-white/5 text-sky-50 placeholder:text-sky-200/20"
           />
         </div>
 
         <div className="space-y-1.5">
-          <Label className="text-white/50 text-xs uppercase tracking-wider">Content</Label>
+          <Label className="text-xs tracking-wider text-sky-200/50 uppercase">Content</Label>
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="Write your announcement here…"
+            placeholder="Write the notice…"
             rows={4}
-            className="flex w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/20 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500/50 resize-none"
+            className="flex w-full resize-none rounded-md border border-sky-800/50 bg-white/5 px-3 py-2 text-sm text-sky-50 placeholder:text-sky-200/20 focus-visible:ring-1 focus-visible:ring-sky-500/50 focus-visible:outline-none"
           />
         </div>
 
@@ -68,9 +69,9 @@ export function CreateAnnouncementCard() {
         <Button
           type="submit"
           disabled={!title || !content || loading}
-          className="w-full bg-indigo-600 hover:bg-indigo-500 text-white border-0"
+          className="w-full border-0 bg-sky-700 text-white hover:bg-sky-800"
         >
-          {loading ? "Publishing…" : "Publish Announcement"}
+          {loading ? "Publishing…" : "Publish announcement"}
         </Button>
       </form>
     </div>

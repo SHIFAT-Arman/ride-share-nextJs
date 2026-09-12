@@ -7,4 +7,4 @@ export function proxy(req: NextRequest) {
   return NextResponse.next();
 }
 
-export const config = { matcher: ["/dashboard/:path"] }; //Run this middleware only for requests matching this pattern.
+export const config = { matcher: ["/portal/admin/:path*"] };

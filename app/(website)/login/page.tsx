@@ -68,7 +68,7 @@ export default function AdminLoginPage() {
         ...result.data,
       });
 
-      router.push("/admin/dashboard");
+      router.push("/portal/admin/dashboard");
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } };
       setServerError(
@@ -182,7 +182,7 @@ export default function AdminLoginPage() {
           </form>
 
           <p className="mt-6 text-center text-sm text-white/30">
-            Need an admin account?{" "}
+            Need an account?{" "}
             <Link
               href="/register"
               className="text-sky-700 transition-colors hover:text-sky-900"
