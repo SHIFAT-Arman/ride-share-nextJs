@@ -20,9 +20,10 @@ export function DeleteAdminCard({ adminId, adminName }: DeleteAdminCardProps) {
     setLoading(true);
     try {
       await adminApi.deleteAdmin(adminId);
-      router.push("/admin/dashboard");
+      router.push("/portal/admin");
+      router.refresh();
     } catch {
-      setError("Delete failed. Please try again.");
+      setError("Delete failed. Try again.");
       setLoading(false);
       setConfirming(false);
     }
@@ -30,30 +31,29 @@ export function DeleteAdminCard({ adminId, adminName }: DeleteAdminCardProps) {
 
   return (
     <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-6">
-      <h3 className="text-xs font-semibold text-red-400/70 uppercase tracking-wider mb-2">
-        Danger Zone
+      <h3 className="mb-2 text-xs font-semibold tracking-wider text-red-400/70 uppercase">
+        Delete admin
       </h3>
-      <p className="text-white/40 text-sm mb-5">
-        Permanently delete{" "}
-        <span className="text-white/70">{adminName}</span>'s account.
+      <p className="mb-5 text-sm text-sky-200/50">
+        Permanently delete <span className="text-sky-100/80">{adminName}</span>.
         This cannot be undone.
       </p>
 
-      {error && <p className="text-xs text-red-400 mb-3">{error}</p>}
+      {error && <p className="mb-3 text-xs text-red-400">{error}</p>}
 
       {confirming ? (
         <div className="flex gap-3">
           <Button
             onClick={handleDelete}
             disabled={loading}
-            className="flex-1 bg-red-600 hover:bg-red-500 text-white border-0"
+            className="flex-1 border-0 bg-red-600 text-white hover:bg-red-500"
           >
             {loading ? "Deleting…" : "Yes, delete"}
           </Button>
           <Button
             onClick={() => setConfirming(false)}
             variant="ghost"
-            className="flex-1 text-white/50 hover:text-white hover:bg-white/5"
+            className="flex-1 text-sky-200/50 hover:bg-white/5 hover:text-sky-50"
           >
             Cancel
           </Button>
@@ -61,9 +61,9 @@ export function DeleteAdminCard({ adminId, adminName }: DeleteAdminCardProps) {
       ) : (
         <Button
           onClick={() => setConfirming(true)}
-          className="w-full bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30"
+          className="w-full border border-red-500/30 bg-red-600/20 text-red-400 hover:bg-red-600/30"
         >
-          Delete Admin
+          Delete admin
         </Button>
       )}
     </div>

@@ -11,14 +11,7 @@ import BorderGlow from "@/components/BorderGlow";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { AdminRole } from "@/types/admin";
+import { registerApi } from "@/api/register";
 
 const registerSchema = z.object({
   firstName: z
@@ -49,17 +42,12 @@ type RegisterFormState = {
   lastName: string;
   email: string;
   password: string;
-  role: string;
+  phone: string;
   age: string;
+  profilePictureUrl: string;
 };
 
 type FormErrors = Partial<Record<keyof RegisterFormState, string>>;
-
-const ROLE_OPTIONS = [
-  { value: AdminRole.ADMIN, label: "Admin" },
-  { value: AdminRole.SUPER_ADMIN, label: "Super Admin" },
-  { value: AdminRole.SUPPORT_AGENT, label: "Support Agent" },
-];
 
 const fieldClass =
   "h-10 bg-white/5 border-white/10 text-[#eef3fb] placeholder:text-white/25 focus-visible:border-sky-700/60 focus-visible:ring-sky-700/25";
@@ -69,8 +57,9 @@ const initialForm: RegisterFormState = {
   lastName: "",
   email: "",
   password: "",
-  role: "",
+  phone: "",
   age: "",
+  profilePictureUrl: "",
 };
 
 export default function AdminRegisterPage() {
@@ -98,13 +87,6 @@ export default function AdminRegisterPage() {
     }
   };
 
-  const handleRoleChange = (value: string) => {
-    setForm((prev) => ({ ...prev, role: value }));
-    if (errors.role) {
-      setErrors((prev) => ({ ...prev, role: undefined }));
-    }
-  };
-
   const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     setServerError("");
@@ -122,7 +104,7 @@ export default function AdminRegisterPage() {
 
     setLoading(true);
     try {
-      await adminApi.register({
+      await registerApi.register({
         ...result.data,
       });
 
@@ -152,7 +134,7 @@ export default function AdminRegisterPage() {
             Portal
           </p>
           <h1 className="text-2xl font-bold tracking-tight">
-            Create an admin account
+            Create an account
           </h1>
           <p className="mt-2 text-sm text-white/40">
             Fill in your details to get access to the Portal Dashboard
@@ -278,35 +260,7 @@ export default function AdminRegisterPage() {
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label
-                  htmlFor="role"
-                  className="text-xs uppercase tracking-wider text-white/60"
-                >
-                  Role
-                </Label>
-                <Select value={form.role} onValueChange={handleRoleChange}>
-                  <SelectTrigger
-                    id="role"
-                    aria-invalid={!!errors.role}
-                    className={fieldClass}
-                  >
-                    <SelectValue placeholder="Select a role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ROLE_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.role && (
-                  <p className="text-xs text-red-400">{errors.role}</p>
-                )}
-              </div>
-
+            <div className="gap-4">
               <div className="space-y-2">
                 <Label
                   htmlFor="age"

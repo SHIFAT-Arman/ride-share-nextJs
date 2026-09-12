@@ -39,9 +39,9 @@ export function ProfilePictureCard({
   };
 
   return (
-    <div className="rounded-2xl border border-white/8 bg-white/3 p-6">
-      <h3 className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-5">
-        Profile Picture
+    <div className="rounded-2xl border border-sky-800/40 bg-sky-950/40 p-6">
+      <h3 className="mb-5 text-xs font-semibold tracking-wider text-sky-200/50 uppercase">
+        Profile picture
       </h3>
 
       <div className="space-y-4">
@@ -66,7 +66,7 @@ export function ProfilePictureCard({
         <Button
           onClick={handleUpload}
           disabled={!file || loading}
-          className="w-full bg-indigo-600 hover:bg-indigo-500 text-white border-0"
+          className="w-full border-0 bg-sky-700 text-white hover:bg-sky-800"
         >
           {loading ? "Uploading…" : "Upload Picture"}
         </Button>

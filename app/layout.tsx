@@ -2,11 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
-import CardNav from "@/components/CardNav";
-import logo from "@/public/car-logo.svg";
-import { navItems } from "@/config/nav-items";
-import Footer from "@/components/Footer";
-import { SmoothScrollProvider } from "@/components/SmoothScrollProvider";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -38,22 +33,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         inter.variable,
       )}
     >
-      <body className="min-h-full flex flex-col">
-        <CardNav
-          logo={logo.src}
-          logoAlt="Car logo"
-          items={navItems}
-          baseColor="#fff"
-          menuColor="#000"
-          buttonBgColor="#111"
-          buttonTextColor="#fff"
-          ease="elastic.out(1, 0.8)"
-        />
-        <SmoothScrollProvider>
-          <main className="flex-1">{children}</main>
-        </SmoothScrollProvider>
-        <Footer />
-      </body>
+      <body>{children}</body>
     </html>
   );
 }

@@ -1,38 +1,31 @@
-export enum AdminRole {
-  SUPER_ADMIN = "SUPER_ADMIN",
-  ADMIN = "ADMIN",
-  SUPPORT_AGENT = "SUPPORT_AGENT",
-}
+import type { PaginationResponse } from "./pagination";
 
-export interface AdminProfile {
+export type AdminRole = "admin";
+
+export interface Admin {
   id: string;
   firstName: string;
   lastName: string;
-  age: number;
+  age?: number;
   country: string;
   phoneNumber: string | null;
   profilePictureUrl: string | null;
   joiningDate: string;
-}
-
-export interface Admin {
-  id: string;
+  createdAt: string;
+  updatedAt: string;
   email: string;
-  password: string;
   role: AdminRole;
-  createdAt: Date;
-  updatedAt: Date;
-  profile: AdminProfile;
 }
 
 export interface AdminFilterParams {
   id?: string;
-  joiningDate?: Date;
+  joiningDate?: string;
   country?: string;
   firstName?: string;
   lastName?: string;
   role?: AdminRole;
   limit?: number;
+  offset?: number;
 }
 
 export interface Announcement {
@@ -41,21 +34,8 @@ export interface Announcement {
   content: string;
   createdAt: string;
   updatedAt: string;
-  admin: {
-    id: string;
-    email?: string;
-    password?: string;
-    role?: AdminRole;
-    createdAt?: string;
-    updatedAt?: string;
-  };
+  admin?: Admin;
 }
 
-export interface AnnouncementListResponse {
-  data: Announcement[];
-  meta: {
-    total: number;
-    offset: number;
-    limit: number;
-  };
-}
+export type AnnouncementListResponse = PaginationResponse<Announcement>;
+export type AdminListResponse = PaginationResponse<Admin>;
