@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { adminApi } from "@/api/admins";
 import type { Admin } from "@/types/admin";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { FileUpload } from "@/components/ui/file-upload";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { AdminPasswordSheet } from "@/components/admin-detail/admin-password-sheet";
@@ -13,7 +14,6 @@ import { Field, MetaRow, fieldClass } from "@/components/admin-detail/form-field
 import {
   display,
   formatDate,
-  pictureSrc,
   profileSchema,
   toForm,
   type ProfileErrors,
@@ -34,6 +34,32 @@ export function AdminDetailCard({
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
+  const [pfpUrl, setPfpUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    let objectUrl: string | undefined;
+    let cancelled = false;
+
+    adminApi
+      .getProfilePictureById(adminId)
+      .then((pic) => {
+        objectUrl = URL.createObjectURL(pic.data);
+        if (cancelled) {
+          URL.revokeObjectURL(objectUrl);
+          return;
+        }
+        setPfpUrl(objectUrl);
+      })
+      .catch(() => {
+        // no picture on file — fallback initials
+      });
+
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [adminId]);
 
   const initials =
     `${admin.firstName[0] ?? ""}${admin.lastName[0] ?? ""}`.toUpperCase();
@@ -41,6 +67,36 @@ export function AdminDetailCard({
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleImageChange = async (files: File[]) => {
+    const file = files[0];
+    if (!file || uploading) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    setUploading(true);
+    setMessage("");
+
+    try {
+      await adminApi.uploadProfilePicture(adminId, formData);
+
+      const pic = await adminApi.getProfilePictureById(adminId);
+      const nextUrl = URL.createObjectURL(pic.data);
+      setPfpUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return nextUrl;
+      });
+
+      setMessage("Picture updated.");
+      setIsError(false);
+    } catch {
+      setMessage("Upload failed.");
+      setIsError(true);
+    }
+
+    setUploading(false);
   };
 
   const handleSubmit = async (e: React.SubmitEvent) => {
@@ -90,16 +146,22 @@ export function AdminDetailCard({
     <Card className="border-sky-800/40 bg-sky-950/40 text-sky-50 shadow-none">
       <CardContent className="space-y-8 p-6">
         <div className="grid grid-cols-1 gap-6 md:grid-cols-[auto_1fr_1fr] md:items-start">
-          <Avatar className="size-40 rounded-xl after:rounded-xl">
-            <AvatarImage
-              src={pictureSrc(admin.profilePictureUrl)}
-              alt={`${admin.firstName} ${admin.lastName}`}
-              className="rounded-xl"
-            />
-            <AvatarFallback className="rounded-xl bg-sky-400/40 text-2xl font-semibold text-sky-50">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
+          <div className="flex flex-col gap-3">
+            <Avatar className="size-40 rounded-xl after:rounded-xl">
+              {pfpUrl ? (
+                <AvatarImage
+                  src={pfpUrl}
+                  alt={`${admin.firstName} ${admin.lastName}`}
+                  className="rounded-xl"
+                />
+              ) : null}
+              <AvatarFallback className="rounded-xl bg-sky-400/40 text-2xl font-semibold text-sky-50">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+
+            <FileUpload onChange={handleImageChange} />
+          </div>
 
           <div className="flex min-h-40 flex-col justify-between gap-6">
             <div className="space-y-4">

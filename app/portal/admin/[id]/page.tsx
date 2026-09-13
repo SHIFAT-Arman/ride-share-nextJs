@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { adminApi } from "@/api/admins";
 import type { Admin } from "@/types/admin";
 import { AdminDetailCard } from "@/components/admin-detail/admin-detail-card";
+import { AdminDetailSkeleton } from "@/components/admin-detail/admin-detail-skeleton";
 import { Button } from "@/components/ui/button";
 
 type LoadResult =
@@ -30,6 +31,7 @@ export default function AdminDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [admin, setAdmin] = useState<Admin | null>(null);
   const [loadError, setLoadError] = useState("");
+  const [loading, setLoading] = useState(true);
 
   const applyResult = (result: LoadResult) => {
     if (result.ok) {
@@ -43,8 +45,13 @@ export default function AdminDetailPage() {
 
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
+    setAdmin(null);
+    setLoadError("");
     fetchAdmin(id).then((result) => {
-      if (!cancelled) applyResult(result);
+      if (cancelled) return;
+      applyResult(result);
+      setLoading(false);
     });
     return () => {
       cancelled = true;
@@ -62,6 +69,8 @@ export default function AdminDetailPage() {
         >
           Back to admins
         </Button>
+
+        {loading && <AdminDetailSkeleton />}
 
         {loadError && (
           <div className="py-16 text-center">

@@ -115,6 +115,9 @@ export const adminApi = {
   getProfilePicture: () =>
     api.get<Blob>(`/admin/profile-picture`, { responseType: "blob" }),
 
+  getProfilePictureById: (id: string) =>
+    api.get<Blob>(`/admin/${id}/profile-picture`, { responseType: "blob" }),
+
   deleteAdmin: (id: string) => api.delete(`/admin/delete-admin/${id}`),
 
   getAnnouncements: (
