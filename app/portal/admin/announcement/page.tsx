@@ -4,9 +4,11 @@ import { useEffect, useState } from "react";
 import { Megaphone } from "lucide-react";
 import { adminApi } from "@/api/admins";
 import { Announcement } from "@/types/admin";
+import { subscribeRoleNotifications } from "@/lib/pusher-client";
 import { CreateAnnouncementCard } from "@/components/admin-detail/CreateAnnouncementCard";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToastManager } from "@/components/ui/toast";
 
 function formatDate(date: string) {
   return new Date(date).toLocaleString("en-US", {
@@ -19,6 +21,7 @@ function formatDate(date: string) {
 }
 
 export default function AnnouncementPage() {
+  const { add: addToast } = useToastManager();
   const [items, setItems] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -41,13 +44,37 @@ export default function AnnouncementPage() {
     load();
   }, []);
 
+  // When another admin publishes to admins, refresh the list
+  useEffect(() => {
+    return subscribeRoleNotifications("admin", (data) => {
+      setItems((prev) => {
+        if (prev.some((item) => item.id === data.id)) return prev;
+        return [
+          {
+            id: data.id,
+            title: data.title,
+            content: data.content,
+            targetRoles: data.targetRoles,
+            createdAt: data.createdAt,
+            updatedAt: data.createdAt,
+          },
+          ...prev,
+        ];
+      });
+    });
+  }, []);
+
   const handleDelete = async (id: string) => {
     setDeletingId(id);
     try {
       await adminApi.deleteAnnouncement(id);
       setItems((prev) => prev.filter((item) => item.id !== id));
+      addToast({ title: "Announcement deleted", type: "success" });
     } catch {
-      setError("Failed to delete announcement. Please try again.");
+      addToast({
+        title: "Could not delete announcement. Try again.",
+        type: "error",
+      });
     } finally {
       setDeletingId(null);
     }
@@ -103,6 +130,9 @@ export default function AnnouncementPage() {
                       {formatDate(item.createdAt)}
                       {item.admin
                         ? ` · ${item.admin.firstName} ${item.admin.lastName}`
+                        : ""}
+                      {item.targetRoles?.length
+                        ? ` · to ${item.targetRoles.join(", ")}`
                         : ""}
                     </p>
                   </div>

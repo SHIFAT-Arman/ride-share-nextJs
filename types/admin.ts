@@ -2,6 +2,8 @@ import type { PaginationResponse } from "./pagination";
 
 export type AdminRole = "admin";
 
+export type NotificationRole = "rider" | "driver" | "admin";
+
 export interface Admin {
   id: string;
   firstName: string;
@@ -32,6 +34,7 @@ export interface Announcement {
   id: string;
   title: string;
   content: string;
+  targetRoles?: NotificationRole[];
   createdAt: string;
   updatedAt: string;
   admin?: Admin;

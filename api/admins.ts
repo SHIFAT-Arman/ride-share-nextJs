@@ -57,6 +57,7 @@ export interface ChangePasswordDto {
 export interface AnnouncementRequest {
   title: string;
   content: string;
+  targetRoles: ("rider" | "driver" | "admin")[];
 }
 
 export interface SendEmailRequest {
