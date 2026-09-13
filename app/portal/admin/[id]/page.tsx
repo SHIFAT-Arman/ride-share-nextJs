@@ -1,71 +1,100 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { useParams } from "next/navigation";
 import { adminApi } from "@/api/admins";
-import { Admin } from "@/types/admin";
-import { AdminProfileCard } from "@/components/admin-detail/AdminProfileCard";
-import { UpdateAdminCard } from "@/components/admin-detail/UpdateAdminCard";
-import { ProfilePictureCard } from "@/components/admin-detail/ProfilePictureCard";
-import { DeleteAdminCard } from "@/components/admin-detail/DeleteAdminCard";
-import { AdminDetailSkeleton } from "@/components/admin-detail/AdminDetailSkeleton";
+import type { Admin } from "@/types/admin";
+import { AdminDetailCard } from "@/components/admin-detail/admin-detail-card";
+import { AdminDetailSkeleton } from "@/components/admin-detail/admin-detail-skeleton";
+import { Button } from "@/components/ui/button";
+
+type LoadResult =
+  | { ok: true; admin: Admin }
+  | { ok: false; error: string };
+
+function fetchAdmin(adminId: string): Promise<LoadResult> {
+  return adminApi
+    .search({ id: adminId })
+    .then((res) => {
+      const next = res.data.data[0] ?? null;
+      if (!next) return { ok: false as const, error: "Admin not found." };
+      return { ok: true as const, admin: next };
+    })
+    .catch(() => ({
+      ok: false as const,
+      error: "Could not load admin details.",
+    }));
+}
 
 export default function AdminDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [admin, setAdmin] = useState<Admin | null>(null);
-  const [error, setError] = useState("");
+  const [loadError, setLoadError] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  const loadAdmin = () => {
-    adminApi
-      .getById(id)
-      .then((res) => setAdmin(res.data))
-      .catch(() => setError("Could not load admin details."));
+  const applyResult = (result: LoadResult) => {
+    if (result.ok) {
+      setAdmin(result.admin);
+      setLoadError("");
+      return;
+    }
+    setAdmin(null);
+    setLoadError(result.error);
   };
 
   useEffect(() => {
-    loadAdmin();
+    let cancelled = false;
+    setLoading(true);
+    setAdmin(null);
+    setLoadError("");
+    fetchAdmin(id).then((result) => {
+      if (cancelled) return;
+      applyResult(result);
+      setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
-
-  const adminName = admin ? `${admin.firstName} ${admin.lastName}` : "";
 
   return (
     <div>
       <main className="mx-auto max-w-4xl">
-        <Link
-          href="/portal/admin"
-          className="mb-8 inline-flex items-center gap-2 font-mono text-xs tracking-wider text-sky-200/45 uppercase transition-colors hover:text-sky-300"
+        <Button
+          variant="link"
+          nativeButton={false}
+          render={<Link href="/portal/admin" />}
+          className="mb-6 px-0 text-sky-200/60 hover:text-sky-300"
         >
-          <ArrowLeft className="h-4 w-4" />
           Back to admins
-        </Link>
+        </Button>
 
-        {error && (
-          <div className="py-24 text-center">
-            <p className="mb-4 text-sm text-red-400">{error}</p>
-            <Link
-              href="/portal/admin"
-              className="text-sm text-sky-400 hover:text-sky-300"
+        {loading && <AdminDetailSkeleton />}
+
+        {loadError && (
+          <div className="py-16 text-center">
+            <p className="mb-4 text-sm text-red-400">{loadError}</p>
+            <Button
+              variant="link"
+              nativeButton={false}
+              render={<Link href="/portal/admin" />}
+              className="text-sky-400 hover:text-sky-300"
             >
               Back to admins
-            </Link>
+            </Button>
           </div>
         )}
 
-        {!admin && !error && <AdminDetailSkeleton />}
-
         {admin && (
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <div className="space-y-6">
-              <AdminProfileCard admin={admin} />
-            </div>
-            <div className="space-y-6">
-              <UpdateAdminCard admin={admin} />
-              <ProfilePictureCard adminId={admin.id} onSuccess={loadAdmin} />
-              <DeleteAdminCard adminId={admin.id} adminName={adminName} />
-            </div>
-          </div>
+          <AdminDetailCard
+            key={id}
+            admin={admin}
+            adminId={id}
+            onSaved={() => {
+              void fetchAdmin(id).then(applyResult);
+            }}
+          />
         )}
       </main>
     </div>
