@@ -21,6 +21,7 @@
     "next": "16.3.2",
     "ogl": "^1.0.11",
     "postprocessing": "^6.36.0",
+    "pusher-js": "^8.6.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-dropzone": "^20.1.1",
