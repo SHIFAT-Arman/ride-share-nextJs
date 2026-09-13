@@ -49,6 +49,11 @@ export interface UpdateAdminDto {
   age?: number;
 }
 
+export interface ChangePasswordDto {
+  oldPassword: string;
+  newPassword: string;
+}
+
 export interface AnnouncementRequest {
   title: string;
   content: string;
@@ -74,6 +79,9 @@ export const adminApi = {
   update: (id: string, data: UpdateAdminDto) =>
     api.patch<Admin>(`/admin/update-admin/${id}`, data),
 
+  changePassword: (id: string, data: ChangePasswordDto) =>
+    api.patch(`/admin/change-password/${id}`, data),
+
   getAll: (
     filter: { limit?: number; offset?: number } = {},
     config?: AxiosRequestConfig,
@@ -83,8 +91,14 @@ export const adminApi = {
       ...config,
     }),
 
-  search: (filter: Partial<AdminFilterParams> = {}) =>
-    api.get<AdminListResponse>("/admin/admin-list", { params: filter }),
+  search: (
+    filter: Partial<AdminFilterParams> = {},
+    config?: AxiosRequestConfig,
+  ) =>
+    api.get<AdminListResponse>("/admin/admin-list", {
+      params: filter,
+      ...config,
+    }),
 
   login: (data: LoginRequest) => api.post<LoginResponse>("/auth/login", data),
 
