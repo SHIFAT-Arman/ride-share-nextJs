@@ -9,6 +9,7 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { FileUpload } from "@/components/ui/file-upload";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { useToastManager } from "@/components/ui/toast";
 import { AdminPasswordSheet } from "@/components/admin-detail/admin-password-sheet";
 import { Field, MetaRow, fieldClass } from "@/components/admin-detail/form-field";
 import {
@@ -29,6 +30,7 @@ export function AdminDetailCard({
   adminId: string;
   onSaved: () => void;
 }) {
+  const { add: addToast } = useToastManager();
   const [form, setForm] = useState<ProfileForm>(() => toForm(admin));
   const [errors, setErrors] = useState<ProfileErrors>({});
   const [saving, setSaving] = useState(false);
@@ -128,16 +130,16 @@ export function AdminDetailCard({
         age: data.age ? Number(data.age) : undefined,
       });
       setForm(data);
-      setMessage("Saved changes.");
-      setIsError(false);
+      addToast({ title: "Admin updated", type: "success" });
       onSaved();
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } };
-      setMessage(
-        axiosErr?.response?.data?.message ??
+      addToast({
+        title:
+          axiosErr?.response?.data?.message ??
           "Save failed. Check the fields and try again.",
-      );
-      setIsError(true);
+        type: "error",
+      });
     }
     setSaving(false);
   };

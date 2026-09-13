@@ -25,6 +25,7 @@ import {
   SidebarRail,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { Toaster } from "@/components/ui/toast";
 import { Button } from "../ui/button";
 import {
   Menubar,
@@ -111,87 +112,89 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <SidebarProvider className="dark min-h-svh bg-sky-950 text-sky-50 [--sidebar:#082f49] [--sidebar-foreground:#e0f2fe] [--sidebar-primary:#0284c7] [--sidebar-primary-foreground:#f0f9ff] [--sidebar-accent:#0c4a6e] [--sidebar-accent-foreground:#7dd3fc] [--sidebar-border:#075985] [--sidebar-ring:#38bdf8] [--background:#020617] [--foreground:#e0f2fe]">
-      <Sidebar collapsible="icon">
-        <SidebarHeader>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton size="lg" className="pointer-events-none">
-                <span className="flex items-center gap-2 font-mono text-base font-semibold tracking-wide uppercase text-sky-200">
-                  <Image
-                    src="/car-logo.svg"
-                    alt="Ride Share Portal"
-                    width={32}
-                    height={32}
-                  />
-                  Ride Share Portal
-                </span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarHeader>
-        <SidebarContent>
-          <SidebarGroup>
-            <SidebarGroupLabel>Portal</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {NAV.map((item) => (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton
-                      render={<Link href={item.href} />}
-                      isActive={navActive(pathname, item.href)}
-                      tooltip={item.title}
-                    >
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        </SidebarContent>
-        <SidebarFooter>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton size="lg" className="pointer-events-none">
-                {isLoading ? (
-                  <SkeletonAvatar />
-                ) : (
-                  <>
-                    <Avatar className="size-8">
-                      {pfpUrl ? <AvatarImage src={pfpUrl} alt="" /> : null}
-                      <AvatarFallback className="bg-sky-800 text-sky-100">
-                        {email ? initialsFromEmail(email) : "—"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="truncate">{email || "Signed in"}</span>
-                  </>
-                )}
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton>
-                <Bell />
-                <span>Notifications</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton tooltip="Sign out" onClick={handleLogout}>
-                <LogOut />
-                <span>Sign out </span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarFooter>
-        <SidebarRail />
-      </Sidebar>
-      <SidebarInset>
-        <header className="flex h-12 shrink-0 items-center gap-2 border-b border-sky-800/60 px-4">
-          <SidebarTrigger />
-        </header>
-        <div className="flex-1 p-6">{children}</div>
-      </SidebarInset>
-    </SidebarProvider>
+    <Toaster>
+      <SidebarProvider className="dark min-h-svh bg-sky-950 text-sky-50 [--sidebar:#082f49] [--sidebar-foreground:#e0f2fe] [--sidebar-primary:#0284c7] [--sidebar-primary-foreground:#f0f9ff] [--sidebar-accent:#0c4a6e] [--sidebar-accent-foreground:#7dd3fc] [--sidebar-border:#075985] [--sidebar-ring:#38bdf8] [--background:#020617] [--foreground:#e0f2fe]">
+        <Sidebar collapsible="icon">
+          <SidebarHeader>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton size="lg" className="pointer-events-none">
+                  <span className="flex items-center gap-2 font-mono text-base font-semibold tracking-wide uppercase text-sky-200">
+                    <Image
+                      src="/car-logo.svg"
+                      alt="Ride Share Portal"
+                      width={32}
+                      height={32}
+                    />
+                    Ride Share Portal
+                  </span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarHeader>
+          <SidebarContent>
+            <SidebarGroup>
+              <SidebarGroupLabel>Portal</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {NAV.map((item) => (
+                    <SidebarMenuItem key={item.href}>
+                      <SidebarMenuButton
+                        render={<Link href={item.href} />}
+                        isActive={navActive(pathname, item.href)}
+                        tooltip={item.title}
+                      >
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </SidebarContent>
+          <SidebarFooter>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton size="lg" className="pointer-events-none">
+                  {isLoading ? (
+                    <SkeletonAvatar />
+                  ) : (
+                    <>
+                      <Avatar className="size-8">
+                        {pfpUrl ? <AvatarImage src={pfpUrl} alt="" /> : null}
+                        <AvatarFallback className="bg-sky-800 text-sky-100">
+                          {email ? initialsFromEmail(email) : "—"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="truncate">{email || "Signed in"}</span>
+                    </>
+                  )}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton>
+                  <Bell />
+                  <span>Notifications</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton tooltip="Sign out" onClick={handleLogout}>
+                  <LogOut />
+                  <span>Sign out </span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarFooter>
+          <SidebarRail />
+        </Sidebar>
+        <SidebarInset>
+          <header className="flex h-12 shrink-0 items-center gap-2 border-b border-sky-800/60 px-4">
+            <SidebarTrigger />
+          </header>
+          <div className="flex-1 p-6">{children}</div>
+        </SidebarInset>
+      </SidebarProvider>
+    </Toaster>
   );
 }
