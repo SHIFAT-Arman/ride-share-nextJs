@@ -25,6 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useToastManager } from "@/components/ui/toast";
 
 const fieldClass =
   "h-10 bg-white/5 border-sky-800/50 text-sky-50 placeholder:text-sky-200/30 focus-visible:border-sky-500/60 focus-visible:ring-sky-500/25";
@@ -48,6 +49,7 @@ function joined(date: string) {
 
 export function AdminsTable({ admins }: { admins: Admin[] }) {
   const router = useRouter();
+  const { add: addToast } = useToastManager();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [age, setAge] = useState("");
@@ -73,27 +75,35 @@ export function AdminsTable({ admins }: { admins: Admin[] }) {
       setForm(emptyForm);
       setAge("");
       setOpen(false);
+      addToast({ title: "Admin added", type: "success" });
       router.refresh();
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } };
-      setError(
-        axiosErr?.response?.data?.message ?? "Could not add admin. Check the fields and try again.",
-      );
+      const message =
+        axiosErr?.response?.data?.message ??
+        "Could not add admin. Check the fields and try again.";
+      setError(message);
+      addToast({ title: message, type: "error" });
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (admin: Admin) => {
-    if (!confirm(`Delete ${admin.firstName} ${admin.lastName}? This cannot be undone.`)) {
+    if (
+      !confirm(
+        `Delete ${admin.firstName} ${admin.lastName}? This cannot be undone.`,
+      )
+    ) {
       return;
     }
     setDeletingId(admin.id);
     try {
       await adminApi.deleteAdmin(admin.id);
+      addToast({ title: "Admin deleted", type: "success" });
       router.refresh();
     } catch {
-      setError("Could not delete admin. Try again.");
+      addToast({ title: "Could not delete admin. Try again.", type: "error" });
     } finally {
       setDeletingId(null);
     }
@@ -106,10 +116,16 @@ export function AdminsTable({ admins }: { admins: Admin[] }) {
           <p className="font-mono text-[10px] tracking-[0.25em] text-sky-400 uppercase">
             Operators
           </p>
-          <h1 className="text-2xl font-semibold tracking-tight text-sky-50">Admins</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-sky-50">
+            Admins
+          </h1>
         </div>
         <Sheet open={open} onOpenChange={setOpen}>
-          <SheetTrigger render={<Button className="bg-sky-700 text-white hover:bg-sky-800" />}>
+          <SheetTrigger
+            render={
+              <Button className="bg-sky-700 text-white hover:bg-sky-800" />
+            }
+          >
             Add admin
           </SheetTrigger>
           <SheetContent className="bg-sky-950 text-sky-50 border-sky-800">
@@ -119,7 +135,11 @@ export function AdminsTable({ admins }: { admins: Admin[] }) {
                 Creates a portal operator with the fields below.
               </SheetDescription>
             </SheetHeader>
-            <form onSubmit={handleCreate} className="flex flex-1 flex-col">
+            <form
+              onSubmit={handleCreate}
+              autoComplete="off"
+              className="flex flex-1 flex-col"
+            >
               <div className="space-y-4 px-6">
                 {error && open && (
                   <p className="text-sm text-red-400">{error}</p>
@@ -129,6 +149,7 @@ export function AdminsTable({ admins }: { admins: Admin[] }) {
                   <Input
                     id="firstName"
                     name="firstName"
+                    autoComplete="off"
                     required
                     value={form.firstName}
                     onChange={onChange}
@@ -140,6 +161,7 @@ export function AdminsTable({ admins }: { admins: Admin[] }) {
                   <Input
                     id="lastName"
                     name="lastName"
+                    autoComplete="off"
                     required
                     value={form.lastName}
                     onChange={onChange}
@@ -152,6 +174,7 @@ export function AdminsTable({ admins }: { admins: Admin[] }) {
                     id="email"
                     name="email"
                     type="email"
+                    autoComplete="off"
                     required
                     value={form.email}
                     onChange={onChange}
@@ -164,6 +187,7 @@ export function AdminsTable({ admins }: { admins: Admin[] }) {
                     id="password"
                     name="password"
                     type="password"
+                    autoComplete="new-password"
                     required
                     minLength={8}
                     value={form.password}
@@ -176,6 +200,7 @@ export function AdminsTable({ admins }: { admins: Admin[] }) {
                   <Input
                     id="country"
                     name="country"
+                    autoComplete="off"
                     value={form.country}
                     onChange={onChange}
                     className={fieldClass}
@@ -186,6 +211,7 @@ export function AdminsTable({ admins }: { admins: Admin[] }) {
                   <Input
                     id="phoneNumber"
                     name="phoneNumber"
+                    autoComplete="off"
                     value={form.phoneNumber}
                     onChange={onChange}
                     className={fieldClass}
@@ -197,6 +223,7 @@ export function AdminsTable({ admins }: { admins: Admin[] }) {
                     id="age"
                     name="age"
                     type="number"
+                    autoComplete="off"
                     min={18}
                     value={age}
                     onChange={(e) => setAge(e.target.value)}
@@ -218,10 +245,6 @@ export function AdminsTable({ admins }: { admins: Admin[] }) {
         </Sheet>
       </div>
 
-      {error && !open && (
-        <p className="mb-4 text-sm text-red-400">{error}</p>
-      )}
-
       {admins.length === 0 ? (
         <p className="rounded-xl border border-sky-800/40 px-6 py-16 text-center text-sm text-sky-200/50">
           No admins yet. Add an operator to get started.
@@ -235,7 +258,9 @@ export function AdminsTable({ admins }: { admins: Admin[] }) {
               <TableHead className="text-sky-200/70">Country</TableHead>
               <TableHead className="text-sky-200/70">Phone</TableHead>
               <TableHead className="text-sky-200/70">Joined</TableHead>
-              <TableHead className="text-right text-sky-200/70">Actions</TableHead>
+              <TableHead className="text-right text-sky-200/70">
+                Actions
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
