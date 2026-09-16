@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { adminApi } from "@/api/admins";
-import type { Admin } from "@/types/admin";
+import { z } from "zod";
+import type { Rider } from "@/api/riders";
+import { riderApi } from "@/api/riders";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -10,61 +11,63 @@ import { FileUpload } from "@/components/ui/file-upload";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { useToastManager } from "@/components/ui/toast";
-import { AdminPasswordSheet } from "@/components/admin-detail/admin-password-sheet";
 import { Field, MetaRow, fieldClass } from "@/components/admin-detail/form-field";
-import {
-  display,
-  formatDate,
-  profileSchema,
-  toForm,
-  type ProfileErrors,
-  type ProfileForm,
-} from "@/components/admin-detail/schema";
+import { display, pictureSrc } from "@/components/admin-detail/schema";
 
-export function AdminDetailCard({
-  admin,
-  adminId,
+const schema = z.object({
+  firstName: z
+    .string()
+    .min(2, "First name must be at least 2 characters")
+    .regex(/^[A-Za-z\s'-]+$/, "First name can only contain letters"),
+  lastName: z
+    .string()
+    .min(2, "Last name must be at least 2 characters")
+    .regex(/^[A-Za-z\s'-]+$/, "Last name can only contain letters"),
+  email: z.email("Enter a valid email address"),
+  phone: z
+    .string()
+    .trim()
+    .min(7, "Enter a valid phone number")
+    .regex(/^[0-9+\-\s()]{7,20}$/, "Enter a valid phone number"),
+});
+
+type Form = z.infer<typeof schema>;
+type FormErrors = Partial<Record<keyof Form, string>>;
+
+function toForm(rider: Rider): Form {
+  return {
+    firstName: rider.firstName,
+    lastName: rider.lastName,
+    email: rider.email ?? "",
+    phone: rider.phone ?? "",
+  };
+}
+
+export function RiderProfileCard({
+  rider,
   onSaved,
 }: {
-  admin: Admin;
-  adminId: string;
+  rider: Rider;
   onSaved: () => void;
 }) {
   const { add: addToast } = useToastManager();
-  const [form, setForm] = useState<ProfileForm>(() => toForm(admin));
-  const [errors, setErrors] = useState<ProfileErrors>({});
+  const [form, setForm] = useState<Form>(() => toForm(rider));
+  const [errors, setErrors] = useState<FormErrors>({});
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
-  const [pfpUrl, setPfpUrl] = useState<string | null>(null);
+  const [pfpUrl, setPfpUrl] = useState<string | undefined>(
+    () => pictureSrc(rider.profilePictureUrl ?? null),
+  );
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
-    let objectUrl: string | undefined;
-    let cancelled = false;
-
-    adminApi
-      .getProfilePictureById(adminId)
-      .then((pic) => {
-        objectUrl = URL.createObjectURL(pic.data);
-        if (cancelled) {
-          URL.revokeObjectURL(objectUrl);
-          return;
-        }
-        setPfpUrl(objectUrl);
-      })
-      .catch(() => {
-        // no picture on file — fallback initials
-      });
-
-    return () => {
-      cancelled = true;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [adminId]);
+    setForm(toForm(rider));
+    setPfpUrl(pictureSrc(rider.profilePictureUrl ?? null));
+  }, [rider]);
 
   const initials =
-    `${admin.firstName[0] ?? ""}${admin.lastName[0] ?? ""}`.toUpperCase();
+    `${rider.firstName[0] ?? ""}${rider.lastName[0] ?? ""}`.toUpperCase();
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -77,41 +80,33 @@ export function AdminDetailCard({
 
     const formData = new FormData();
     formData.append("file", file);
-
     setUploading(true);
     setMessage("");
 
     try {
-      await adminApi.uploadProfilePicture(adminId, formData);
-
-      const pic = await adminApi.getProfilePictureById(adminId);
-      const nextUrl = URL.createObjectURL(pic.data);
-      setPfpUrl((prev) => {
-        if (prev) URL.revokeObjectURL(prev);
-        return nextUrl;
-      });
-
+      const { data } = await riderApi.uploadProfilePicture(rider.id, formData);
+      setPfpUrl(pictureSrc(data.profilePictureUrl ?? null));
       setMessage("Picture updated.");
       setIsError(false);
+      onSaved();
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } };
       setMessage(axiosErr?.response?.data?.message ?? "Upload failed.");
       setIsError(true);
     }
-
     setUploading(false);
   };
 
   const handleSubmit = async (e: React.SubmitEvent) => {
     e.preventDefault();
     setMessage("");
-    const parsed = profileSchema.safeParse(form);
+    const parsed = schema.safeParse(form);
     if (!parsed.success) {
-      const next: ProfileErrors = {};
+      const next: FormErrors = {};
       for (const issue of parsed.error.issues) {
         const key = issue.path[0];
         if (typeof key === "string" && !(key in next)) {
-          next[key as keyof ProfileForm] = issue.message;
+          next[key as keyof Form] = issue.message;
         }
       }
       setErrors(next);
@@ -120,18 +115,8 @@ export function AdminDetailCard({
     setErrors({});
     setSaving(true);
     try {
-      const data = parsed.data;
-      await adminApi.update(adminId, {
-        firstName: data.firstName,
-        lastName: data.lastName,
-        email: data.email,
-        country: data.country || undefined,
-        phoneNumber: data.phoneNumber || undefined,
-        joiningDate: data.joiningDate || undefined,
-        age: data.age ? Number(data.age) : undefined,
-      });
-      setForm(data);
-      addToast({ title: "Admin updated", type: "success" });
+      await riderApi.update(rider.id, parsed.data);
+      addToast({ title: "Profile updated", type: "success" });
       onSaved();
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } };
@@ -154,7 +139,7 @@ export function AdminDetailCard({
               {pfpUrl ? (
                 <AvatarImage
                   src={pfpUrl}
-                  alt={`${admin.firstName} ${admin.lastName}`}
+                  alt={`${rider.firstName} ${rider.lastName}`}
                   className="rounded-xl"
                 />
               ) : null}
@@ -162,34 +147,25 @@ export function AdminDetailCard({
                 {initials}
               </AvatarFallback>
             </Avatar>
-
             <FileUpload onChange={handleImageChange} />
           </div>
 
-          <div className="flex min-h-40 flex-col justify-between gap-6">
-            <div className="space-y-4">
-              <MetaRow label="First name" value={admin.firstName} />
-              <MetaRow label="Last name" value={admin.lastName} />
-            </div>
-            <MetaRow label="Email" value={admin.email} />
+          <div className="space-y-4">
+            <MetaRow label="First name" value={rider.firstName} />
+            <MetaRow label="Last name" value={rider.lastName} />
+            <MetaRow label="Email" value={display(rider.email)} />
           </div>
 
           <div className="space-y-4">
-            <MetaRow label="Age" value={display(admin.age)} />
-            <MetaRow label="Country" value={display(admin.country)} />
-            <MetaRow label="Phone" value={display(admin.phoneNumber)} />
-            <MetaRow
-              label="Joining date"
-              value={
-                admin.joiningDate ? formatDate(admin.joiningDate) : "Not set"
-              }
-            />
+            <MetaRow label="Phone" value={display(rider.phone)} />
+            <MetaRow label="Status" value={display(rider.status)} />
+            <MetaRow label="Age" value={display(rider.age)} />
           </div>
         </div>
 
         <Separator className="bg-sky-800/40" />
 
-        <form id="admin-profile-form" noValidate onSubmit={handleSubmit}>
+        <form id="rider-profile-form" noValidate onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field id="firstName" label="First name" error={errors.firstName}>
               <Input
@@ -222,51 +198,13 @@ export function AdminDetailCard({
                 className={fieldClass}
               />
             </Field>
-            <Field id="phoneNumber" label="Phone" error={errors.phoneNumber}>
+            <Field id="phone" label="Phone" error={errors.phone}>
               <Input
-                id="phoneNumber"
-                name="phoneNumber"
-                value={form.phoneNumber}
+                id="phone"
+                name="phone"
+                value={form.phone}
                 onChange={onChange}
-                aria-invalid={!!errors.phoneNumber}
-                className={fieldClass}
-              />
-            </Field>
-            <Field id="country" label="Country" error={errors.country}>
-              <Input
-                id="country"
-                name="country"
-                value={form.country}
-                onChange={onChange}
-                aria-invalid={!!errors.country}
-                className={fieldClass}
-              />
-            </Field>
-            <Field id="age" label="Age" error={errors.age}>
-              <Input
-                id="age"
-                name="age"
-                type="number"
-                min={18}
-                max={100}
-                value={form.age}
-                onChange={onChange}
-                aria-invalid={!!errors.age}
-                className={fieldClass}
-              />
-            </Field>
-            <Field
-              id="joiningDate"
-              label="Joining date"
-              error={errors.joiningDate}
-            >
-              <Input
-                id="joiningDate"
-                name="joiningDate"
-                type="date"
-                value={form.joiningDate}
-                onChange={onChange}
-                aria-invalid={!!errors.joiningDate}
+                aria-invalid={!!errors.phone}
                 className={fieldClass}
               />
             </Field>
@@ -282,10 +220,9 @@ export function AdminDetailCard({
             {message}
           </p>
         )}
-        <AdminPasswordSheet adminId={adminId} />
         <Button
           type="submit"
-          form="admin-profile-form"
+          form="rider-profile-form"
           disabled={saving}
           className="border-0 bg-sky-700 text-white hover:bg-sky-800 active:translate-y-px"
         >

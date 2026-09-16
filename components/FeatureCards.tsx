@@ -1,5 +1,4 @@
 import { FaDollarSign, FaUserShield, FaChessRook } from "react-icons/fa6";
-import { DollarSign, LayoutDashboard, Shield } from "lucide-react";
 import Image from "next/image";
 import {
   Card,

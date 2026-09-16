@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { z } from "zod";
-import { adminApi } from "@/api/admins";
 
 import BorderGlow from "@/components/BorderGlow";
 import { Button } from "@/components/ui/button";
@@ -29,7 +28,11 @@ const registerSchema = z.object({
     .regex(/[A-Z]/, "Must contain at least one uppercase letter")
     .regex(/[0-9]/, "Must contain at least one number")
     .regex(/[^a-zA-Z0-9]/, "Must contain at least one special character"),
-  role: z.string().min(1, "Select a role"),
+  phone: z
+    .string()
+    .trim()
+    .min(7, "Enter a valid phone number")
+    .regex(/^[0-9+\-\s()]+$/, "Enter a valid phone number"),
   age: z.coerce
     .number()
     .int("Age must be a whole number")
@@ -105,7 +108,12 @@ export default function AdminRegisterPage() {
     setLoading(true);
     try {
       await registerApi.register({
-        ...result.data,
+        firstName: result.data.firstName,
+        lastName: result.data.lastName,
+        email: result.data.email,
+        password: result.data.password,
+        phone: result.data.phone,
+        age: result.data.age,
       });
 
       router.push("/login");
@@ -260,31 +268,52 @@ export default function AdminRegisterPage() {
               )}
             </div>
 
-            <div className="gap-4">
-              <div className="space-y-2">
-                <Label
-                  htmlFor="age"
-                  className="text-xs uppercase tracking-wider text-white/60"
-                >
-                  Age
-                </Label>
-                <Input
-                  id="age"
-                  name="age"
-                  type="number"
-                  inputMode="numeric"
-                  min={18}
-                  max={100}
-                  placeholder="25"
-                  value={form.age}
-                  onChange={handleChange}
-                  aria-invalid={!!errors.age}
-                  className={fieldClass}
-                />
-                {errors.age && (
-                  <p className="text-xs text-red-400">{errors.age}</p>
-                )}
-              </div>
+            <div className="space-y-2">
+              <Label
+                htmlFor="phone"
+                className="text-xs uppercase tracking-wider text-white/60"
+              >
+                Phone
+              </Label>
+              <Input
+                id="phone"
+                name="phone"
+                type="tel"
+                autoComplete="tel"
+                placeholder="+880xxxxxxxxxx"
+                value={form.phone}
+                onChange={handleChange}
+                aria-invalid={!!errors.phone}
+                className={fieldClass}
+              />
+              {errors.phone && (
+                <p className="text-xs text-red-400">{errors.phone}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label
+                htmlFor="age"
+                className="text-xs uppercase tracking-wider text-white/60"
+              >
+                Age
+              </Label>
+              <Input
+                id="age"
+                name="age"
+                type="number"
+                inputMode="numeric"
+                min={18}
+                max={100}
+                placeholder="25"
+                value={form.age}
+                onChange={handleChange}
+                aria-invalid={!!errors.age}
+                className={fieldClass}
+              />
+              {errors.age && (
+                <p className="text-xs text-red-400">{errors.age}</p>
+              )}
             </div>
 
             <Button

@@ -5,6 +5,8 @@ import { adminApi } from "@/api/admins";
 import type { NotificationRole } from "@/types/admin";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { useToastManager } from "@/components/ui/toast";
 
@@ -13,6 +15,12 @@ const ROLE_OPTIONS: { value: NotificationRole; label: string }[] = [
   { value: "driver", label: "Drivers" },
   { value: "admin", label: "Admins" },
 ];
+
+const MAX_CONTENT_WORDS = 200;
+
+function countWords(text: string) {
+  return text.trim().split(/\s+/).filter(Boolean).length;
+}
 
 export function CreateAnnouncementCard({ onCreated }: { onCreated?: () => void }) {
   const { add: addToast } = useToastManager();
@@ -25,14 +33,24 @@ export function CreateAnnouncementCard({ onCreated }: { onCreated?: () => void }
   ]);
   const [loading, setLoading] = useState(false);
 
-  const toggleRole = (role: NotificationRole) => {
+  const wordCount = countWords(content);
+  const overLimit = wordCount > MAX_CONTENT_WORDS;
+
+  const toggleRole = (role: NotificationRole, checked: boolean) => {
     setTargetRoles((prev) =>
-      prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role],
+      checked ? [...prev, role] : prev.filter((r) => r !== role),
     );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (overLimit) {
+      addToast({
+        title: `Content exceeds ${MAX_CONTENT_WORDS} words`,
+        type: "error",
+      });
+      return;
+    }
     setLoading(true);
     try {
       await adminApi.createAnnouncement({ title, content, targetRoles });
@@ -67,30 +85,41 @@ export function CreateAnnouncementCard({ onCreated }: { onCreated?: () => void }
 
         <div className="space-y-1.5">
           <Label className="text-xs tracking-wider text-sky-200/50 uppercase">Content</Label>
-          <textarea
+          <Textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="Write the notice…"
             rows={4}
-            className="flex w-full resize-none rounded-md border border-sky-800/50 bg-white/5 px-3 py-2 text-sm text-sky-50 placeholder:text-sky-200/20 focus-visible:ring-1 focus-visible:ring-sky-500/50 focus-visible:outline-none"
+            aria-invalid={overLimit || undefined}
+            className="min-h-24 border-sky-800/50 bg-white/5 text-sky-50 placeholder:text-sky-200/20"
           />
+          <p
+            className={
+              overLimit
+                ? "text-right text-xs text-red-400"
+                : "text-right text-xs text-sky-200/40"
+            }
+          >
+            {wordCount} / {MAX_CONTENT_WORDS}
+          </p>
         </div>
 
         <div className="space-y-2">
           <Label className="text-xs tracking-wider text-sky-200/50 uppercase">
             Send to
           </Label>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2.5">
             {ROLE_OPTIONS.map((option) => (
               <label
                 key={option.value}
-                className="flex cursor-pointer items-center gap-2 text-sm text-sky-100/80"
+                className="flex cursor-pointer items-center gap-2.5 text-sm text-sky-100/80"
               >
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={targetRoles.includes(option.value)}
-                  onChange={() => toggleRole(option.value)}
-                  className="size-4 accent-sky-600"
+                  onCheckedChange={(checked) =>
+                    toggleRole(option.value, checked === true)
+                  }
+                  className="border-sky-700/60 bg-white/5 data-checked:border-sky-600 data-checked:bg-sky-600"
                 />
                 {option.label}
               </label>
@@ -100,8 +129,14 @@ export function CreateAnnouncementCard({ onCreated }: { onCreated?: () => void }
 
         <Button
           type="submit"
-          disabled={!title || !content || targetRoles.length === 0 || loading}
-          className="w-full border-0 bg-sky-700 text-white hover:bg-sky-800"
+          disabled={
+            !title ||
+            !content ||
+            overLimit ||
+            targetRoles.length === 0 ||
+            loading
+          }
+          className="w-full rounded-md border-0 bg-sky-700 text-white hover:bg-sky-800"
         >
           {loading ? "Publishing…" : "Publish announcement"}
         </Button>

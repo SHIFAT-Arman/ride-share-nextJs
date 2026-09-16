@@ -5,10 +5,19 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { Bell, LayoutDashboard, LogOut, Megaphone, Users } from "lucide-react";
+import {
+  authApi,
+  profilePathForRole,
+  type UserRole,
+} from "@/api/auth";
 import { adminApi } from "@/api/admins";
+import { riderApi } from "@/api/riders";
+import { driverApi } from "@/api/drivers";
+import { pictureSrc } from "@/components/admin-detail/schema";
 import {
   subscribeRoleNotifications,
   type AnnouncementEvent,
+  type NotificationRole,
 } from "@/lib/pusher-client";
 import { getSeenIds, markSeen } from "@/lib/seen-announcements";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -32,7 +41,13 @@ import {
 import { Toaster, useToastManager } from "@/components/ui/toast";
 import { SkeletonAvatar } from "../SkeletonAvatar";
 
-const NAV = [
+type NavItem = {
+  title: string;
+  href: string;
+  icon: typeof LayoutDashboard;
+};
+
+const ADMIN_NAV: NavItem[] = [
   {
     title: "Dashboard",
     href: "/portal/admin/dashboard",
@@ -44,17 +59,39 @@ const NAV = [
     href: "/portal/admin/announcement",
     icon: Megaphone,
   },
-] as const;
+];
 
-function navActive(pathname: string, href: string) {
+const RIDER_NAV: NavItem[] = [
+  {
+    title: "Dashboard",
+    href: "/portal/rider/dashboard",
+    icon: LayoutDashboard,
+  },
+];
+
+const DRIVER_NAV: NavItem[] = [
+  {
+    title: "Dashboard",
+    href: "/portal/driver/dashboard",
+    icon: LayoutDashboard,
+  },
+];
+
+function navForRole(role: UserRole | ""): NavItem[] {
+  if (role === "admin") return ADMIN_NAV;
+  if (role === "rider") return RIDER_NAV;
+  if (role === "driver") return DRIVER_NAV;
+  return [];
+}
+
+function navActive(pathname: string, href: string, nav: NavItem[]) {
   if (href === "/portal/admin") {
-    const named = NAV.filter((item) => item.href !== href).map(
-      (item) => item.href,
-    );
+    const named = nav.filter((item) => item.href !== href).map((item) => item.href);
     return (
       pathname === href ||
       (pathname.startsWith(`${href}/`) &&
-        !named.some((n) => pathname === n || pathname.startsWith(`${n}/`)))
+        !named.some((n) => pathname === n || pathname.startsWith(`${n}/`)) &&
+        !pathname.endsWith("/profile"))
     );
   }
   return pathname === href || pathname.startsWith(`${href}/`);
@@ -70,51 +107,92 @@ function PortalShellInner({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { add: addToast } = useToastManager();
 
+  const [role, setRole] = useState<UserRole | "">("");
+  const [userId, setUserId] = useState("");
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
-  const [adminId, setAdminId] = useState("");
   const [pfpUrl, setPfpUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const [notifications, setNotifications] = useState<AnnouncementEvent[]>([]);
   const [unread, setUnread] = useState(0);
   const [open, setOpen] = useState(false);
-  // Wait for catch-up before live subscribe (avoids hydrate wiping live events)
   const [hydrated, setHydrated] = useState(false);
   const knownIdsRef = useRef(new Set<string>());
+
+  const nav = navForRole(role);
+  const profileHref = role ? profilePathForRole(role) : "#";
 
   useEffect(() => {
     let objectUrl: string | undefined;
     let cancelled = false;
 
-    adminApi.me().then(async ({ data }) => {
-      if (cancelled) return;
-      setAdminId(data.id);
-      setEmail(data.email);
-      setName(data.firstName + " " + data.lastName);
+    async function loadSession() {
       try {
-        const pic = await adminApi.getProfilePicture();
-        objectUrl = URL.createObjectURL(pic.data);
-        if (cancelled) {
-          URL.revokeObjectURL(objectUrl);
-          return;
+        const { data: session } = await authApi.me();
+        if (cancelled) return;
+
+        setRole(session.role);
+        setUserId(session.sub);
+        setEmail(session.email);
+
+        if (session.role === "admin") {
+          const { data: admin } = await adminApi.me();
+          if (cancelled) return;
+          setName(`${admin.firstName} ${admin.lastName}`);
+          try {
+            const pic = await adminApi.getProfilePicture();
+            objectUrl = URL.createObjectURL(pic.data);
+            if (cancelled) {
+              URL.revokeObjectURL(objectUrl);
+              return;
+            }
+            setPfpUrl((prev) => {
+              if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+              return objectUrl!;
+            });
+          } catch {
+            // no picture — initials fallback
+          }
+        } else if (session.role === "rider") {
+          const { data: rider } = await riderApi.getById(session.sub);
+          if (cancelled) return;
+          setName(`${rider.firstName} ${rider.lastName}`);
+          setPfpUrl(pictureSrc(rider.profilePictureUrl ?? null) ?? null);
+        } else if (session.role === "driver") {
+          const { data: driver } = await driverApi.getById(session.sub);
+          if (cancelled) return;
+          setName(`${driver.firstName} ${driver.lastName}`);
+          setPfpUrl(pictureSrc(driver.profilePictureUrl ?? null) ?? null);
         }
-        setPfpUrl(objectUrl);
-        setIsLoading(false);
       } catch {
-        setIsLoading(false);
+        // axios 401 redirects to /login
+      } finally {
+        if (!cancelled) setIsLoading(false);
       }
-    });
+    }
+
+    void loadSession();
+
+    // Profile pages fire this after a successful save so the sidebar stays in sync.
+    const onProfileUpdated = () => {
+      void loadSession();
+    };
+    window.addEventListener("portal-profile-updated", onProfileUpdated);
 
     return () => {
       cancelled = true;
+      window.removeEventListener("portal-profile-updated", onProfileUpdated);
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
   }, []);
 
-  // Catch up on announcements published while offline
+  // Admin-only: catch up on announcements published while offline
   useEffect(() => {
-    if (!adminId) return;
+    if (!userId || role !== "admin") {
+      if (role === "rider" || role === "driver") setHydrated(true);
+      return;
+    }
 
     let cancelled = false;
 
@@ -139,7 +217,7 @@ function PortalShellInner({ children }: { children: React.ReactNode }) {
 
         knownIdsRef.current = new Set(items.map((n) => n.id));
         setNotifications(items);
-        const seen = new Set(getSeenIds(adminId));
+        const seen = new Set(getSeenIds(userId));
         setUnread(items.filter((n) => !seen.has(n.id)).length);
       })
       .finally(() => {
@@ -149,38 +227,41 @@ function PortalShellInner({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [adminId]);
+  }, [userId, role]);
 
-  // Live announcements — only after hydrate so a slow fetch cannot wipe them
+  // Live announcements for the signed-in role
   useEffect(() => {
-    if (!hydrated) return;
+    if (!hydrated || !role) return;
 
-    const unsubscribe = subscribeRoleNotifications("admin", (data) => {
-      if (knownIdsRef.current.has(data.id)) return;
-      knownIdsRef.current.add(data.id);
+    const unsubscribe = subscribeRoleNotifications(
+      role as NotificationRole,
+      (data) => {
+        if (knownIdsRef.current.has(data.id)) return;
+        knownIdsRef.current.add(data.id);
 
-      setNotifications((prev) => [data, ...prev].slice(0, 20));
-      setUnread((n) => n + 1);
-      addToast({
-        title: data.title,
-        description: data.content.slice(0, 80),
-        type: "info",
-      });
-    });
+        setNotifications((prev) => [data, ...prev].slice(0, 5));
+        setUnread((n) => n + 1);
+        addToast({
+          title: data.title,
+          description: data.content.slice(0, 80),
+          type: "info",
+        });
+      },
+    );
 
     return unsubscribe;
-  }, [hydrated, addToast]);
+  }, [hydrated, role, addToast]);
 
   const handleLogout = async () => {
-    await adminApi.logout();
+    await authApi.logout();
     router.push("/login");
   };
 
   const toggleNotifications = () => {
     setOpen((wasOpen) => {
-      if (!wasOpen) {
+      if (!wasOpen && userId) {
         markSeen(
-          adminId,
+          userId,
           notifications.map((n) => n.id),
         );
         setUnread(0);
@@ -195,10 +276,10 @@ function PortalShellInner({ children }: { children: React.ReactNode }) {
         <SidebarHeader>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton size="lg" className="pointer-events-none">
+              <SidebarMenuButton size="lg" render={<Link href="/" />}>
                 <span className="flex items-center gap-2 font-mono text-base font-semibold tracking-wide uppercase text-sky-200">
                   <Image
-                    src="/car-logo.svg"
+                    src="/car-logo.png"
                     alt="Ride Share Portal"
                     width={32}
                     height={32}
@@ -214,11 +295,11 @@ function PortalShellInner({ children }: { children: React.ReactNode }) {
             <SidebarGroupLabel>Portal</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {NAV.map((item) => (
+                {nav.map((item) => (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
                       render={<Link href={item.href} />}
-                      isActive={navActive(pathname, item.href)}
+                      isActive={navActive(pathname, item.href, nav)}
                       tooltip={item.title}
                     >
                       <item.icon />
@@ -233,7 +314,12 @@ function PortalShellInner({ children }: { children: React.ReactNode }) {
         <SidebarFooter>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton size="lg" className="pointer-events-none">
+              <SidebarMenuButton
+                size="lg"
+                render={<Link href={profileHref} />}
+                isActive={pathname === profileHref}
+                tooltip="Update profile"
+              >
                 {isLoading ? (
                   <SkeletonAvatar />
                 ) : (
@@ -244,7 +330,14 @@ function PortalShellInner({ children }: { children: React.ReactNode }) {
                         {email ? initialsFromEmail(email) : "—"}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="truncate">{email || "Signed in"}</span>
+                    <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
+                      <span className="truncate">{email || "Signed in"}</span>
+                      {name ? (
+                        <span className="truncate text-xs text-sky-200/60">
+                          {name}
+                        </span>
+                      ) : null}
+                    </div>
                   </>
                 )}
               </SidebarMenuButton>
