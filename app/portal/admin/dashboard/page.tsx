@@ -9,7 +9,6 @@ export default async function AdminDashboardPage() {
   const auth = await serverAuthConfig();
 
   try {
-    // ponytail: 3 list-meta round trips until Nest grows a stats endpoint
     const [admins, riders, drivers] = await Promise.all([
       adminApi.getAll({ limit: 1 }, auth),
       riderApi.getAll({ limit: 1 }, auth),

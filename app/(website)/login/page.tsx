@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { z } from "zod";
-import { adminApi } from "@/api/admins";
+import { authApi, dashboardPathForRole } from "@/api/auth";
 import BorderGlow from "@/components/BorderGlow";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +22,7 @@ type FormErrors = Partial<Record<keyof LoginForm, string>>;
 const fieldClass =
   "h-10 bg-white/5 border-white/10 text-[#eef3fb] placeholder:text-white/25 focus-visible:border-sky-700/60 focus-visible:ring-sky-700/25";
 
-export default function AdminLoginPage() {
+export default function LoginPage() {
   const router = useRouter();
   const [form, setForm] = useState<LoginForm>({ email: "", password: "" });
   const [errors, setErrors] = useState<FormErrors>({});
@@ -64,11 +64,14 @@ export default function AdminLoginPage() {
 
     setLoading(true);
     try {
-      const response = await adminApi.login({
-        ...result.data,
-      });
-
-      router.push("/portal/admin/dashboard");
+      // Role comes back in the login body so we do not need /auth/me here.
+      const { data } = await authApi.login(result.data);
+      const path = dashboardPathForRole(data.role);
+      if (path === "/login") {
+        setServerError("Unknown account role. Contact support.");
+        return;
+      }
+      router.push(path);
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } };
       setServerError(

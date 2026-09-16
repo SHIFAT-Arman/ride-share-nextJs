@@ -5,6 +5,19 @@ import React, { useRef, useState } from "react";
 import { IconUpload } from "@tabler/icons-react";
 import { useDropzone } from "react-dropzone";
 
+const MAX_SIZE = 2 * 1024 * 1024; // 2 MB
+const ALLOWED_TYPES = ["image/jpeg", "image/png"];
+
+function getFileError(file: File): string | null {
+  if (!ALLOWED_TYPES.includes(file.type)) {
+    return "Only PNG and JPG/JPEG images are allowed.";
+  }
+  if (file.size > MAX_SIZE) {
+    return "File must be 2 MB or smaller.";
+  }
+  return null;
+}
+
 export const FileUpload = ({
   onChange,
   className,
@@ -13,12 +26,23 @@ export const FileUpload = ({
   className?: string;
 }) => {
   const [files, setFiles] = useState<File[]>([]);
+  const [error, setError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (newFiles: File[]) => {
-    const next = newFiles.slice(0, 1);
-    setFiles(next);
-    onChange?.(next);
+    const file = newFiles[0];
+    if (!file) return;
+
+    const fileError = getFileError(file);
+    if (fileError) {
+      setError(fileError);
+      setFiles([]);
+      return;
+    }
+
+    setError("");
+    setFiles([file]);
+    onChange?.([file]);
   };
 
   const handleClick = () => {
@@ -28,12 +52,21 @@ export const FileUpload = ({
   const { getRootProps, isDragActive } = useDropzone({
     multiple: false,
     noClick: true,
+    maxSize: MAX_SIZE,
     accept: {
       "image/jpeg": [],
       "image/png": [],
-      "image/webp": [],
     },
     onDrop: handleFileChange,
+    onDropRejected: (rejections) => {
+      const code = rejections[0]?.errors[0]?.code;
+      if (code === "file-too-large") {
+        setError("File must be 2 MB or smaller.");
+      } else {
+        setError("Only PNG and JPG/JPEG images are allowed.");
+      }
+      setFiles([]);
+    },
   });
 
   return (
@@ -51,7 +84,7 @@ export const FileUpload = ({
           ref={fileInputRef}
           id="file-upload-handle"
           type="file"
-          accept="image/jpeg,image/png,image/webp"
+          accept="image/jpeg,image/png"
           onChange={(e) => handleFileChange(Array.from(e.target.files || []))}
           className="hidden"
         />
@@ -64,6 +97,7 @@ export const FileUpload = ({
               : "Upload image"}
         </span>
       </button>
+      {error && <p className="mt-1 text-xs text-red-400">{error}</p>}
     </div>
   );
 };

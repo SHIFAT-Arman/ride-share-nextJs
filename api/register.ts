@@ -1,7 +1,16 @@
 import api from "@/lib/axios";
-import { CreateRequest } from "./admins";
 import { Rider } from "./riders";
 
+export type RegisterRequest = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  phone: string;
+  age: number;
+};
+
 export const registerApi = {
-  register: (data: CreateRequest) => api.post<Rider>("/auth/register/", data),
+  register: (data: RegisterRequest) =>
+    api.post<Rider>("/auth/register/", data),
 };

@@ -83,7 +83,7 @@ export default function AnnouncementPage() {
   return (
     <div className="mx-auto grid max-w-5xl gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
       <div>
-        <p className="font-mono text-[10px] tracking-[0.25em] text-sky-400 uppercase">
+        <p className="text-xs tracking-wider text-sky-400 uppercase">
           Notices
         </p>
         <h1 className="mt-1 mb-6 text-2xl font-semibold tracking-tight">
@@ -96,7 +96,7 @@ export default function AnnouncementPage() {
             <Button
               variant="ghost"
               size="sm"
-              className="ml-2 text-red-400 hover:bg-red-500/10"
+              className="ml-2 rounded-md text-red-400 hover:bg-red-500/10"
               onClick={load}
             >
               Try again
@@ -126,7 +126,7 @@ export default function AnnouncementPage() {
                     <h2 className="text-base font-medium text-sky-50">
                       {item.title}
                     </h2>
-                    <p className="mt-1 font-mono text-[11px] text-sky-200/40">
+                    <p className="mt-1 text-xs text-sky-200/40">
                       {formatDate(item.createdAt)}
                       {item.admin
                         ? ` · ${item.admin.firstName} ${item.admin.lastName}`
@@ -141,7 +141,7 @@ export default function AnnouncementPage() {
                     size="sm"
                     disabled={deletingId === item.id}
                     onClick={() => handleDelete(item.id)}
-                    className="text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                    className="rounded-md text-red-400 hover:bg-red-500/10 hover:text-red-300"
                   >
                     {deletingId === item.id ? "Deleting…" : "Delete"}
                   </Button>
