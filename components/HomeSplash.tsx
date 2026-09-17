@@ -5,11 +5,20 @@ import InfinityLoop from "@/components/ui/infinityLoop";
 
 const SPLASH_MS = 3000;
 
+// Survive remounts if a sibling effect throws (e.g. WebGL) — otherwise splash resets forever.
+let splashFinished = false;
+
 export default function HomeSplash() {
-  const [visible, setVisible] = useState(true);
+  const [visible, setVisible] = useState(() => !splashFinished);
 
   useEffect(() => {
+    if (splashFinished) {
+      setVisible(false);
+      return;
+    }
+
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      splashFinished = true;
       setVisible(false);
       return;
     }
@@ -21,6 +30,7 @@ export default function HomeSplash() {
     document.body.style.overflow = "hidden";
 
     const id = window.setTimeout(() => {
+      splashFinished = true;
       html.style.overflow = prevHtmlOverflow;
       document.body.style.overflow = prevBodyOverflow;
       setVisible(false);
