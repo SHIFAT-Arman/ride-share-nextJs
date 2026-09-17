@@ -1,7 +1,7 @@
 import type { AxiosRequestConfig } from "axios";
 import { cookies } from "next/headers";
 
-// Forward incoming request cookies (e.g. HttpOnly access_token) to backend API calls from RSC.
+// Forward incoming request cookies (e.g. HttpOnly rs_access / rs_refresh) to backend API calls from RSC.
 export async function serverAuthConfig(
   config: AxiosRequestConfig = {},
 ): Promise<AxiosRequestConfig> {

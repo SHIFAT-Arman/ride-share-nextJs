@@ -1,36 +1,86 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Ride Share Frontend
 
-## Getting Started
+Next.js 16 App Router portal + marketing site. Package manager: **Bun**.
 
-First, run the development server:
+## Setup
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
+bun install
+cp .env.example .env
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Dev server defaults to [http://localhost:3000](http://localhost:3000). Prefer port **3001** if the Nest API also uses 3000:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+bun dev -- -p 3001
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Environment
 
-## Learn More
+See [`.env.example`](.env.example). Important vars:
 
-To learn more about Next.js, take a look at the following resources:
+| Variable | Purpose |
+|----------|---------|
+| `NEXT_PUBLIC_API_URL` | Browser axios base (local Nest URL, or `/v1/api` when proxying) |
+| `API_URL` | Server/RSC axios base (absolute URL to Nest) |
+| `API_PROXY_TARGET` | Optional. When set, Next rewrites `/v1/api/*` to that origin (same-origin cookies on Vercel) |
+| `NEXT_PUBLIC_PUSHER_KEY` / `CLUSTER` | Realtime announcements |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Local Nest (default)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```env
+NEXT_PUBLIC_API_URL=http://localhost:3000/v1/api
+API_URL=http://localhost:3000/v1/api
+# API_PROXY_TARGET unset
+```
+
+### Proxy to Render from local or Vercel
+
+```env
+NEXT_PUBLIC_API_URL=/v1/api
+API_URL=https://ride-share-nestjs.onrender.com/v1/api
+API_PROXY_TARGET=https://ride-share-nestjs.onrender.com
+```
+
+Restart `bun dev` after changing env. No code changes needed to switch backends.
+
+## Why the API rewrite?
+
+The Render API currently allows CORS only for `http://localhost:3001` and sets cookies with `SameSite=Lax`. A Vercel origin calling Render directly would fail login/cookies. Rewriting `/v1/api` through Next keeps the browser same-origin so Lax cookies work.
+
+If you later drop the rewrite and call Render from the browser, update the Nest service on Render:
+
+- `FRONTEND_URL` = your Vercel origin(s)
+- `COOKIE_SECURE=true`, `COOKIE_SAME_SITE=none`, `TRUST_PROXY=true`
+
+## Auth notes
+
+- Session cookies: `rs_access`, `rs_refresh` (HttpOnly).
+- `/portal/*` requires a cookie via `proxy.ts`.
+- Role mismatch (e.g. rider opening `/portal/admin`) redirects to that role’s dashboard after `/auth/me`.
+- Pusher announcement channels are public (`{role}-notifications`); private channels need a backend auth endpoint.
+
+## Scripts
+
+```bash
+bun run build
+bun start
+bunx playwright test
+```
 
 ## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Import the GitHub repo in the Vercel dashboard (this app uses Bun via `bun.lock` + [`vercel.json`](vercel.json)).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**Environment variables (Production):**
+
+```
+NEXT_PUBLIC_API_URL=/v1/api
+API_URL=https://ride-share-nestjs.onrender.com/v1/api
+API_PROXY_TARGET=https://ride-share-nestjs.onrender.com
+NEXT_PUBLIC_PUSHER_KEY=<your key>
+NEXT_PUBLIC_PUSHER_CLUSTER=<your cluster>
+```
+
+After the first deploy, smoke-test `/`, `/login`, then login → portal (cookies go through the `/v1/api` rewrite).

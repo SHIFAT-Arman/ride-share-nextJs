@@ -4,16 +4,18 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, LayoutDashboard, LogOut, Megaphone, Users } from "lucide-react";
+import { Bell, LogOut } from "lucide-react";
 import {
   authApi,
+  dashboardPathForRole,
   profilePathForRole,
   type UserRole,
 } from "@/api/auth";
 import { adminApi } from "@/api/admins";
 import { riderApi } from "@/api/riders";
 import { driverApi } from "@/api/drivers";
-import { pictureSrc } from "@/components/admin-detail/schema";
+import { portalNavActive, portalNavForRole } from "@/config/nav-items";
+import { pictureSrc } from "@/lib/media";
 import {
   subscribeRoleNotifications,
   type AnnouncementEvent,
@@ -41,65 +43,17 @@ import {
 import { Toaster, useToastManager } from "@/components/ui/toast";
 import { SkeletonAvatar } from "../SkeletonAvatar";
 
-type NavItem = {
-  title: string;
-  href: string;
-  icon: typeof LayoutDashboard;
-};
-
-const ADMIN_NAV: NavItem[] = [
-  {
-    title: "Dashboard",
-    href: "/portal/admin/dashboard",
-    icon: LayoutDashboard,
-  },
-  { title: "Admins", href: "/portal/admin", icon: Users },
-  {
-    title: "Announcements",
-    href: "/portal/admin/announcement",
-    icon: Megaphone,
-  },
-];
-
-const RIDER_NAV: NavItem[] = [
-  {
-    title: "Dashboard",
-    href: "/portal/rider/dashboard",
-    icon: LayoutDashboard,
-  },
-];
-
-const DRIVER_NAV: NavItem[] = [
-  {
-    title: "Dashboard",
-    href: "/portal/driver/dashboard",
-    icon: LayoutDashboard,
-  },
-];
-
-function navForRole(role: UserRole | ""): NavItem[] {
-  if (role === "admin") return ADMIN_NAV;
-  if (role === "rider") return RIDER_NAV;
-  if (role === "driver") return DRIVER_NAV;
-  return [];
-}
-
-function navActive(pathname: string, href: string, nav: NavItem[]) {
-  if (href === "/portal/admin") {
-    const named = nav.filter((item) => item.href !== href).map((item) => item.href);
-    return (
-      pathname === href ||
-      (pathname.startsWith(`${href}/`) &&
-        !named.some((n) => pathname === n || pathname.startsWith(`${n}/`)) &&
-        !pathname.endsWith("/profile"))
-    );
-  }
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
-
 function initialsFromEmail(email: string) {
   const local = email.split("@")[0] ?? "?";
   return local.slice(0, 2).toUpperCase();
+}
+
+function portalRoleFromPath(pathname: string): UserRole | null {
+  const segment = pathname.split("/")[2];
+  if (segment === "admin" || segment === "rider" || segment === "driver") {
+    return segment;
+  }
+  return null;
 }
 
 function PortalShellInner({ children }: { children: React.ReactNode }) {
@@ -120,7 +74,7 @@ function PortalShellInner({ children }: { children: React.ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
   const knownIdsRef = useRef(new Set<string>());
 
-  const nav = navForRole(role);
+  const nav = portalNavForRole(role);
   const profileHref = role ? profilePathForRole(role) : "#";
 
   useEffect(() => {
@@ -186,6 +140,14 @@ function PortalShellInner({ children }: { children: React.ReactNode }) {
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
   }, []);
+
+  useEffect(() => {
+    if (!role) return;
+    const pathRole = portalRoleFromPath(pathname);
+    if (pathRole && pathRole !== role) {
+      router.replace(dashboardPathForRole(role));
+    }
+  }, [pathname, role, router]);
 
   // Admin-only: catch up on announcements published while offline
   useEffect(() => {
@@ -299,7 +261,7 @@ function PortalShellInner({ children }: { children: React.ReactNode }) {
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
                       render={<Link href={item.href} />}
-                      isActive={navActive(pathname, item.href, nav)}
+                      isActive={portalNavActive(pathname, item.href, nav)}
                       tooltip={item.title}
                     >
                       <item.icon />

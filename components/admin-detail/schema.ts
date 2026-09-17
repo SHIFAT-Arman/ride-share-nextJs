@@ -64,13 +64,6 @@ export const emptyPassword: PasswordForm = {
   confirmPassword: "",
 };
 
-export function pictureSrc(url: string | null) {
-  if (!url) return undefined;
-  if (url.startsWith("http")) return url;
-  const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "";
-  return `${base}${url.startsWith("/") ? url : `/${url}`}`;
-}
-
 export function formatDate(value: string) {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return value;

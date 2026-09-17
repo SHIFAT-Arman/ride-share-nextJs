@@ -12,7 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { useToastManager } from "@/components/ui/toast";
 import { Field, MetaRow, fieldClass } from "@/components/admin-detail/form-field";
-import { display, pictureSrc } from "@/components/admin-detail/schema";
+import { display } from "@/components/admin-detail/schema";
+import { pictureSrc } from "@/lib/media";
 
 const schema = z.object({
   firstName: z
