@@ -228,13 +228,21 @@ const GhostFibers: FC<GhostFibersProps> = ({
     const container = containerRef.current;
     if (!container) return;
 
-    const renderer = new Renderer({
-      webgl: 2,
-      alpha: false,
-      antialias: false,
-      dpr: Math.min(Math.max(dpr, 0.5), 2)
-    });
+    // OGL assigns `gl.renderer` even when getContext fails — that throws and can
+    // remount the tree (home splash stuck). Fall back to the section solid bg.
+    let renderer: Renderer;
+    try {
+      renderer = new Renderer({
+        webgl: 2,
+        alpha: false,
+        antialias: false,
+        dpr: Math.min(Math.max(dpr, 0.5), 2)
+      });
+    } catch {
+      return;
+    }
     const gl = renderer.gl;
+    if (!gl) return;
     const canvas = gl.canvas as HTMLCanvasElement;
     canvas.style.width = '100%';
     canvas.style.height = '100%';
