@@ -1,7 +1,12 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
 
+const baseURL =
+  typeof window === "undefined"
+    ? process.env.API_URL
+    : process.env.NEXT_PUBLIC_API_URL;
+
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  baseURL,
   headers: {
     "Content-Type": "application/json",
   },

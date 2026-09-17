@@ -10,11 +10,6 @@ import type { PaginationResponse } from "@/types/pagination";
 
 export type AdminListResponse = PaginationResponse<Admin>;
 
-export interface LoginRequest {
-  email: string;
-  password: string;
-}
-
 export interface CreateRequest {
   email: string;
   password: string;
@@ -26,16 +21,6 @@ export interface CreateRequest {
   profilePictureUrl?: string;
   age?: number;
   role?: string;
-}
-
-export interface LoginResponse {
-  message: string;
-}
-
-export interface SessionUser {
-  sub: string;
-  email: string;
-  role: string;
 }
 
 export interface UpdateAdminDto {
@@ -100,10 +85,6 @@ export const adminApi = {
       params: filter,
       ...config,
     }),
-
-  login: (data: LoginRequest) => api.post<LoginResponse>("/auth/login", data),
-
-  logout: () => api.post("/auth/logout"),
 
   getById: (id: string, config?: AxiosRequestConfig) =>
     api.get<Admin>(`/admin/get-admin-by-id/${id}`, config),
