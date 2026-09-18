@@ -76,7 +76,9 @@ export default function LoginPage() {
       const axiosErr = err as { response?: { data?: { message?: string } } };
       setServerError(
         axiosErr?.response?.data?.message ??
-          "Invalid credentials. Please try again.",
+          (!axiosErr?.response
+            ? "Cannot reach the API. Check network / API URL."
+            : "Invalid credentials. Please try again."),
       );
     } finally {
       setLoading(false);
