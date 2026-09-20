@@ -14,6 +14,9 @@ A modern ride-sharing web application with a public marketing site and role-base
 [![Playwright](https://img.shields.io/badge/Playwright-%232EAD33.svg?logo=playwright&logoColor=white)](#)
 [![Pusher](https://img.shields.io/badge/Pusher-%23300D4F.svg?logo=pusher&logoColor=white)](#)
 [![Recharts](https://img.shields.io/badge/Recharts-%238884D8.svg?logo=chartdotjs&logoColor=white)](#)
+[![Leaflet](https://img.shields.io/badge/Leaflet-%23199B4D.svg?logo=leaflet&logoColor=white)](#)
+[![OpenStreetMap](https://img.shields.io/badge/OpenStreetMap-%237EBC6F.svg?logo=openstreetmap&logoColor=white)](#)
+[![Nominatim](https://img.shields.io/badge/Nominatim-Geocoding-%237EBC6F.svg?logo=openstreetmap&logoColor=white)](https://nominatim.org/)
 
 ---
 
@@ -25,8 +28,11 @@ A modern ride-sharing web application with a public marketing site and role-base
   - [Landing page](#landing-page)
   - [Admin portal](#admin-portal)
   - [Rider portal](#rider-portal)
+  - [Book a ride](#book-a-ride)
+  - [Driver portal](#driver-portal)
 - [Tech stack](#tech-stack)
 - [Project structure](#project-structure)
+- [Book a ride (code guide)](docs/book-a-ride.md)
 
 ---
 
@@ -37,10 +43,13 @@ Ride Share helps people book intercity and long-distance trips with transparent 
 - A polished marketing landing page for discovery and conversion
 - Secure login and registration
 - Separate dashboards for **Admin**, **Rider**, and **Driver** roles
-- Real-time announcements powered by Pusher
+- **Book a ride** with Leaflet maps, Nominatim place search, OSRM route estimate, and live tracking
+- Real-time announcements and ride updates powered by Pusher
 - Playwright end-to-end tests for critical user flows such as login and registration
 
-This repository is the **Next.js frontend**. It connects to a NestJS API backend for authentication, user management, and portal data.
+This repository is the **Next.js frontend**. It connects to a NestJS API backend for authentication, user management, rides, and portal data.
+
+For a file-by-file walkthrough of booking, see [docs/book-a-ride.md](docs/book-a-ride.md).
 
 ---
 
@@ -51,9 +60,10 @@ This repository is the **Next.js frontend**. It connects to a NestJS API backend
 | Marketing site | Hero, feature highlights, testimonials, FAQ, and call-to-action |
 | Authentication | Cookie-based sessions with role-aware redirects into the correct portal |
 | Admin portal | Account totals chart, admin management, announcements, profile updates |
-| Rider portal | Dashboard with verification status and profile editing |
-| Driver portal | Role-specific dashboard and profile access |
-| Realtime | Live announcement notifications for portal users |
+| Book a ride | Map pickup, Nominatim destination search, car/bike, route + fare, confirm |
+| Rider portal | Dashboard, active ride tracking, cancel, profile editing |
+| Driver portal | Go online (GPS), accept open requests, start / complete / cancel trips |
+| Realtime | Announcements plus ride status and driver location over Pusher |
 | Testing | Playwright coverage for key authentication and page flows |
 
 ---
@@ -118,6 +128,40 @@ This repository is the **Next.js frontend**. It connects to a NestJS API backend
 
 ![Rider update profile](docs/screenshots/rider-update-profile.png)
 
+### Book a ride
+
+#### Booking map (destination search)
+
+Rider picks a destination via Nominatim-backed search on a Leaflet / OpenStreetMap map, then chooses **Car** or **Bike**.
+
+![Book a ride](docs/screenshots/ride-booking.png)
+
+#### Rider tracking (SEARCHING)
+
+After confirm, the track page redraws pickup, destination, and the OSRM route polyline while status is `SEARCHING`.
+
+![Rider tracking while searching](docs/screenshots/ride-tracking-rider.png)
+
+#### Rider tracking (IN_PROGRESS)
+
+Once the trip has started, the rider sees `IN_PROGRESS` with the same route on the map.
+
+![Rider ride in progress](docs/screenshots/rider-in-progress.png)
+
+### Driver portal
+
+#### Open requests (accept)
+
+Drivers who are online see open `SEARCHING` rides and can **Accept**.
+
+![Driver accept open request](docs/screenshots/driver-ride-accept.png)
+
+#### Assigned ride (start trip)
+
+After accept (or auto-assign), the driver gets **Start trip** / **Cancel** for an `ACCEPTED` ride.
+
+![Driver ride accepted](docs/screenshots/driver-in-progress.png)
+
 ---
 
 ## Tech stack
@@ -128,6 +172,7 @@ This repository is the **Next.js frontend**. It connects to a NestJS API backend
 | Language | TypeScript |
 | Styling | Tailwind CSS 4, shadcn/ui |
 | Animation | GSAP, Motion, Three.js / OGL |
+| Maps | Leaflet, OpenStreetMap tiles, Nominatim (via API), OSRM estimate (via API) |
 | Data & validation | Axios, Zod |
 | Charts | Recharts |
 | Realtime | Pusher |
@@ -140,9 +185,14 @@ This repository is the **Next.js frontend**. It connects to a NestJS API backend
 
 ```text
 app/
-  (website)/     Public marketing pages, login, register
-  portal/        Role-based dashboards (admin, rider, driver)
-components/      UI and page sections
-api/             API client modules
-docs/screenshots Project screenshots for documentation
+  (website)/              Public marketing pages, login, register, book-a-ride
+  portal/rider/           Rider dashboard + ride/[id] tracking
+  portal/driver/          Driver dashboard (accept / start / complete)
+  portal/admin/           Admin tools
+components/book-ride/     Book-a-ride map UI
+api/                      Axios clients (auth, rides, location, …)
+lib/pusher-client.ts      Announcements + ride channels
+docs/
+  screenshots/            README screenshots
+  book-a-ride.md          How book-a-ride works in code
 ```
