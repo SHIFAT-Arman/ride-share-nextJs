@@ -47,14 +47,17 @@ function toForm(rider: Rider): Form {
 export function RiderProfileCard({
   rider,
   onSaved,
+  canManageStatus = false,
 }: {
   rider: Rider;
   onSaved: () => void;
+  canManageStatus?: boolean;
 }) {
   const { add: addToast } = useToastManager();
   const [form, setForm] = useState<Form>(() => toForm(rider));
   const [errors, setErrors] = useState<FormErrors>({});
   const [saving, setSaving] = useState(false);
+  const [statusSaving, setStatusSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
   const [pfpUrl, setPfpUrl] = useState<string | undefined>(
@@ -131,6 +134,29 @@ export function RiderProfileCard({
     setSaving(false);
   };
 
+  const handleStatusChange = async (
+    e: React.ChangeEvent<HTMLSelectElement>,
+  ) => {
+    const status = e.target.value as Rider["status"];
+    if (status === rider.status) return;
+    setStatusSaving(true);
+    try {
+      await riderApi.updateStatus(rider.id, { status });
+      addToast({ title: "Status updated", type: "success" });
+      onSaved();
+    } catch (err: unknown) {
+      const axiosErr = err as {
+        response?: { data?: { message?: string | string[] } };
+      };
+      const raw = axiosErr?.response?.data?.message;
+      const title = Array.isArray(raw)
+        ? raw.join(", ")
+        : (raw ?? "Could not update status.");
+      addToast({ title, type: "error" });
+    }
+    setStatusSaving(false);
+  };
+
   return (
     <Card className="border-sky-800/40 bg-sky-950/40 text-sky-50 shadow-none">
       <CardContent className="space-y-8 p-6">
@@ -159,7 +185,27 @@ export function RiderProfileCard({
 
           <div className="space-y-4">
             <MetaRow label="Phone" value={display(rider.phone)} />
-            <MetaRow label="Status" value={display(rider.status)} />
+            {canManageStatus ? (
+              <div className="space-y-1.5">
+                <p className="text-xs tracking-wide text-sky-200/50 uppercase">
+                  Status
+                </p>
+                <select
+                  value={rider.status}
+                  disabled={statusSaving}
+                  onChange={handleStatusChange}
+                  className={`${fieldClass} w-full rounded-md border px-3 text-sm`}
+                >
+                  <option value="ACTIVE">ACTIVE</option>
+                  <option value="SUSPENDED">SUSPENDED</option>
+                  <option value="PENDING_VERIFICATION">
+                    PENDING_VERIFICATION
+                  </option>
+                </select>
+              </div>
+            ) : (
+              <MetaRow label="Status" value={display(rider.status)} />
+            )}
             <MetaRow label="Age" value={display(rider.age)} />
           </div>
         </div>

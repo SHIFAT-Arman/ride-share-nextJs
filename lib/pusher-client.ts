@@ -42,8 +42,70 @@ export function subscribeRoleNotifications(
 
   channel.bind("new-announcement", onAnnouncement);
 
-  // Only unbind this handler — other pages may still need the channel
   return () => {
     channel.unbind("new-announcement", onAnnouncement);
+  };
+}
+
+export type RideAssignedEvent = {
+  rideId: string;
+  status: string;
+  pickupAddress: string;
+  destinationAddress: string;
+  vehicleType: string;
+  estimatedFare: number | null;
+};
+
+export type RideStatusEvent = {
+  rideId: string;
+  status: string;
+  driverUserId: string | null;
+};
+
+export type DriverLocationEvent = {
+  rideId: string;
+  latitude: number;
+  longitude: number;
+};
+
+/** Driver channel: ride auto-assigned. */
+export function subscribeDriverRideAssigned(
+  driverUserId: string,
+  onAssigned: (data: RideAssignedEvent) => void,
+) {
+  const client = getPusher();
+  if (!client) return () => {};
+
+  const channel = client.subscribe(`driver-${driverUserId}`);
+  channel.bind("ride-assigned", onAssigned);
+  return () => {
+    channel.unbind("ride-assigned", onAssigned);
+    client.unsubscribe(`driver-${driverUserId}`);
+  };
+}
+
+/** Ride channel: status + live driver GPS. */
+export function subscribeRideChannel(
+  rideId: string,
+  handlers: {
+    onStatus?: (data: RideStatusEvent) => void;
+    onDriverLocation?: (data: DriverLocationEvent) => void;
+  },
+) {
+  const client = getPusher();
+  if (!client) return () => {};
+
+  const name = `ride-${rideId}`;
+  const channel = client.subscribe(name);
+  if (handlers.onStatus) channel.bind("ride-status", handlers.onStatus);
+  if (handlers.onDriverLocation) {
+    channel.bind("driver-location", handlers.onDriverLocation);
+  }
+  return () => {
+    if (handlers.onStatus) channel.unbind("ride-status", handlers.onStatus);
+    if (handlers.onDriverLocation) {
+      channel.unbind("driver-location", handlers.onDriverLocation);
+    }
+    client.unsubscribe(name);
   };
 }

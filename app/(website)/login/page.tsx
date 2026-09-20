@@ -5,11 +5,20 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { z } from "zod";
-import { authApi, dashboardPathForRole } from "@/api/auth";
+import { authApi, dashboardPathForRole, type UserRole } from "@/api/auth";
 import BorderGlow from "@/components/BorderGlow";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
+/** Same-origin next only; riders may return to book-a-ride. */
+function postLoginPath(role: UserRole, next: string | null): string {
+  const dashboard = dashboardPathForRole(role);
+  if (!next || !next.startsWith("/") || next.startsWith("//")) return dashboard;
+  if (next === "/book-a-ride" && role === "rider") return next;
+  if (next === dashboard) return next;
+  return dashboard;
+}
 
 const loginSchema = z.object({
   email: z.email("Enter a valid email address"),
@@ -66,7 +75,8 @@ export default function LoginPage() {
     try {
       // Role comes back in the login body so we do not need /auth/me here.
       const { data } = await authApi.login(result.data);
-      const path = dashboardPathForRole(data.role);
+      const next = new URLSearchParams(window.location.search).get("next");
+      const path = postLoginPath(data.role, next);
       if (path === "/login") {
         setServerError("Unknown account role. Contact support.");
         return;
