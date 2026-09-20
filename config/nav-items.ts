@@ -1,4 +1,12 @@
-import { LayoutDashboard, Megaphone, Users, type LucideIcon } from "lucide-react";
+import {
+  Car,
+  LayoutDashboard,
+  MapPinned,
+  Megaphone,
+  UserRound,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 import type { UserRole } from "@/api/auth";
 import type { CardNavItem } from "@/components/CardNav";
 
@@ -15,6 +23,8 @@ const ADMIN_NAV: PortalNavItem[] = [
     icon: LayoutDashboard,
   },
   { title: "Admins", href: "/portal/admin", icon: Users },
+  { title: "Riders", href: "/portal/admin/riders", icon: UserRound },
+  { title: "Drivers", href: "/portal/admin/drivers", icon: Car },
   {
     title: "Announcements",
     href: "/portal/admin/announcement",
@@ -27,6 +37,11 @@ const RIDER_NAV: PortalNavItem[] = [
     title: "Dashboard",
     href: "/portal/rider/dashboard",
     icon: LayoutDashboard,
+  },
+  {
+    title: "Book a ride",
+    href: "/book-a-ride",
+    icon: MapPinned,
   },
 ];
 

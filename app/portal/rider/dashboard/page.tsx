@@ -1,19 +1,31 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { authApi } from "@/api/auth";
 import { riderApi, type Rider } from "@/api/riders";
+import { rideApi, type Ride } from "@/api/rides";
 import {
   AccountSummaryCard,
   StatusCard,
 } from "@/components/portal/summary-cards";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function RiderDashboardPage() {
   const [rider, setRider] = useState<Rider | null>(null);
+  const [active, setActive] = useState<Ride | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+
+  const loadActive = useCallback(async () => {
+    try {
+      const { data } = await rideApi.getActive();
+      setActive(data);
+    } catch {
+      setActive(null);
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -32,6 +44,7 @@ export default function RiderDashboardPage() {
         const { data } = await riderApi.getById(session.sub);
         if (cancelled) return;
         setRider(data);
+        await loadActive();
       } catch {
         if (!cancelled) setError("Could not load dashboard.");
       } finally {
@@ -43,7 +56,7 @@ export default function RiderDashboardPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [loadActive]);
 
   if (loading) {
     return (
@@ -81,6 +94,25 @@ export default function RiderDashboardPage() {
           Dashboard
         </h1>
       </div>
+
+      {active && (
+        <div className="rounded-xl border border-sky-800/60 bg-sky-950/40 p-4">
+          <p className="text-xs font-medium tracking-wide text-sky-400 uppercase">
+            Active ride · {active.status}
+          </p>
+          <p className="mt-1 text-sm text-sky-100">
+            {active.pickupAddress} → {active.destinationAddress}
+          </p>
+          <Button
+            className="mt-3"
+            size="sm"
+            render={<Link href={`/portal/rider/ride/${active.id}`} />}
+          >
+            Track ride
+          </Button>
+        </div>
+      )}
+
       <div className="grid gap-6 md:grid-cols-2">
         <StatusCard status={rider.status} />
         <AccountSummaryCard
@@ -90,6 +122,8 @@ export default function RiderDashboardPage() {
           phone={rider.phone}
         />
       </div>
+
+      <Button render={<Link href="/book-a-ride" />}>Book a ride</Button>
     </div>
   );
 }

@@ -25,11 +25,23 @@ export interface FindDriverParams {
   lastName?: string;
 }
 
+export interface CreateDriverDto {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  phone: string;
+}
+
 export interface UpdateDriverDto {
   firstName?: string;
   lastName?: string;
   email?: string;
   phone?: string;
+}
+
+export interface UpdateDriverStatusDto {
+  status: DriverStatus;
 }
 
 export interface DriverRating {
@@ -52,8 +64,15 @@ export const driverApi = {
   getById: (id: string, config?: AxiosRequestConfig) =>
     api.get<Driver>(`/drivers/${id}`, config),
 
+  create: (data: CreateDriverDto) => api.post<Driver>("/drivers", data),
+
   update: (id: string, data: UpdateDriverDto) =>
     api.patch<Driver>(`/drivers/${id}`, data),
+
+  updateStatus: (id: string, data: UpdateDriverStatusDto) =>
+    api.patch<Driver>(`/drivers/${id}/status`, data),
+
+  delete: (id: string) => api.delete(`/drivers/${id}`),
 
   uploadProfilePicture: (id: string, formData: FormData) =>
     api.put<{ profilePictureUrl: string }>(

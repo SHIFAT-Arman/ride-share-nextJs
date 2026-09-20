@@ -26,11 +26,24 @@ export interface FindRiderParams {
   lastName?: string;
 }
 
+export interface CreateRiderDto {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  phone: string;
+  age?: number;
+}
+
 export interface UpdateRiderDto {
   firstName?: string;
   lastName?: string;
   email?: string;
   phone?: string;
+}
+
+export interface UpdateRiderStatusDto {
+  status: RiderStatus;
 }
 
 export const riderApi = {
@@ -46,8 +59,15 @@ export const riderApi = {
   getById: (id: string, config?: AxiosRequestConfig) =>
     api.get<Rider>(`/riders/${id}`, config),
 
+  create: (data: CreateRiderDto) => api.post<Rider>("/riders", data),
+
   update: (id: string, data: UpdateRiderDto) =>
     api.patch<Rider>(`/riders/${id}`, data),
+
+  updateStatus: (id: string, data: UpdateRiderStatusDto) =>
+    api.patch<Rider>(`/riders/${id}/status`, data),
+
+  delete: (id: string) => api.delete(`/riders/${id}`),
 
   uploadProfilePicture: (id: string, formData: FormData) =>
     api.put<{ profilePictureUrl: string }>(
