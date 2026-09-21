@@ -20,6 +20,7 @@ import {
   type ProfileErrors,
   type ProfileForm,
 } from "@/components/admin-detail/schema";
+import { pictureSrc } from "@/lib/media";
 
 export function AdminDetailCard({
   admin,
@@ -36,32 +37,15 @@ export function AdminDetailCard({
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
-  const [pfpUrl, setPfpUrl] = useState<string | null>(null);
+  const [pfpUrl, setPfpUrl] = useState<string | undefined>(() =>
+    pictureSrc(admin.profilePictureUrl ?? null),
+  );
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
-    let objectUrl: string | undefined;
-    let cancelled = false;
-
-    adminApi
-      .getProfilePictureById(adminId)
-      .then((pic) => {
-        objectUrl = URL.createObjectURL(pic.data);
-        if (cancelled) {
-          URL.revokeObjectURL(objectUrl);
-          return;
-        }
-        setPfpUrl(objectUrl);
-      })
-      .catch(() => {
-        // no picture on file — fallback initials
-      });
-
-    return () => {
-      cancelled = true;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [adminId]);
+    setForm(toForm(admin));
+    setPfpUrl(pictureSrc(admin.profilePictureUrl ?? null));
+  }, [admin]);
 
   const initials =
     `${admin.firstName[0] ?? ""}${admin.lastName[0] ?? ""}`.toUpperCase();
@@ -82,17 +66,11 @@ export function AdminDetailCard({
     setMessage("");
 
     try {
-      await adminApi.uploadProfilePicture(adminId, formData);
-
-      const pic = await adminApi.getProfilePictureById(adminId);
-      const nextUrl = URL.createObjectURL(pic.data);
-      setPfpUrl((prev) => {
-        if (prev) URL.revokeObjectURL(prev);
-        return nextUrl;
-      });
-
+      const { data } = await adminApi.uploadProfilePicture(adminId, formData);
+      setPfpUrl(pictureSrc(data.profilePictureUrl ?? null));
       setMessage("Picture updated.");
       setIsError(false);
+      onSaved();
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } };
       setMessage(axiosErr?.response?.data?.message ?? "Upload failed.");

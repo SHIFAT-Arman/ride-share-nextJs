@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, LogOut } from "lucide-react";
+import { ArrowLeftRight, Bell, LogOut } from "lucide-react";
 import {
   authApi,
   dashboardPathForRole,
@@ -62,11 +62,13 @@ function PortalShellInner({ children }: { children: React.ReactNode }) {
   const { add: addToast } = useToastManager();
 
   const [role, setRole] = useState<UserRole | "">("");
+  const [availableRoles, setAvailableRoles] = useState<UserRole[]>([]);
   const [userId, setUserId] = useState("");
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [pfpUrl, setPfpUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [switching, setSwitching] = useState(false);
 
   const [notifications, setNotifications] = useState<AnnouncementEvent[]>([]);
   const [unread, setUnread] = useState(0);
@@ -74,11 +76,21 @@ function PortalShellInner({ children }: { children: React.ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
   const knownIdsRef = useRef(new Set<string>());
 
-  const nav = portalNavForRole(role);
+  const canSwitch =
+    availableRoles.includes("rider") && availableRoles.includes("driver");
+  const switchTarget: "rider" | "driver" | null =
+    role === "rider" ? "driver" : role === "driver" ? "rider" : null;
+
+  const nav = portalNavForRole(role).filter(
+    (item) =>
+      !(
+        item.href === "/portal/rider/apply-driver" &&
+        availableRoles.includes("driver")
+      ),
+  );
   const profileHref = role ? profilePathForRole(role) : "#";
 
   useEffect(() => {
-    let objectUrl: string | undefined;
     let cancelled = false;
 
     async function loadSession() {
@@ -87,6 +99,7 @@ function PortalShellInner({ children }: { children: React.ReactNode }) {
         if (cancelled) return;
 
         setRole(session.role);
+        setAvailableRoles(session.availableRoles ?? [session.role]);
         setUserId(session.sub);
         setEmail(session.email);
 
@@ -94,20 +107,7 @@ function PortalShellInner({ children }: { children: React.ReactNode }) {
           const { data: admin } = await adminApi.me();
           if (cancelled) return;
           setName(`${admin.firstName} ${admin.lastName}`);
-          try {
-            const pic = await adminApi.getProfilePicture();
-            objectUrl = URL.createObjectURL(pic.data);
-            if (cancelled) {
-              URL.revokeObjectURL(objectUrl);
-              return;
-            }
-            setPfpUrl((prev) => {
-              if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
-              return objectUrl!;
-            });
-          } catch {
-            // no picture — initials fallback
-          }
+          setPfpUrl(pictureSrc(admin.profilePictureUrl ?? null) ?? null);
         } else if (session.role === "rider") {
           const { data: rider } = await riderApi.getById(session.sub);
           if (cancelled) return;
@@ -137,16 +137,15 @@ function PortalShellInner({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
       window.removeEventListener("portal-profile-updated", onProfileUpdated);
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
   }, []);
 
   useEffect(() => {
     if (!role) return;
     const pathRole = portalRoleFromPath(pathname);
-    if (pathRole && pathRole !== role) {
-      router.replace(dashboardPathForRole(role));
-    }
+    if (!pathRole || pathRole === role) return;
+    // JWT role must match portal segment; use the switcher to change modes.
+    router.replace(dashboardPathForRole(role));
   }, [pathname, role, router]);
 
   // Admin-only: catch up on announcements published while offline
@@ -217,6 +216,21 @@ function PortalShellInner({ children }: { children: React.ReactNode }) {
   const handleLogout = async () => {
     await authApi.logout();
     router.push("/login");
+  };
+
+  const handleSwitchRole = async () => {
+    if (!switchTarget || switching) return;
+    setSwitching(true);
+    try {
+      await authApi.switchRole(switchTarget);
+      window.location.assign(dashboardPathForRole(switchTarget));
+    } catch {
+      addToast({
+        title: "Could not switch dashboard. Try again.",
+        type: "error",
+      });
+      setSwitching(false);
+    }
   };
 
   const toggleNotifications = () => {
@@ -304,6 +318,22 @@ function PortalShellInner({ children }: { children: React.ReactNode }) {
                 )}
               </SidebarMenuButton>
             </SidebarMenuItem>
+            {canSwitch && switchTarget ? (
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  tooltip={`Switch to ${switchTarget}`}
+                  disabled={switching}
+                  onClick={() => void handleSwitchRole()}
+                >
+                  <ArrowLeftRight />
+                  <span>
+                    {switching
+                      ? "Switching…"
+                      : `Switch to ${switchTarget}`}
+                  </span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ) : null}
             <SidebarMenuItem className="relative">
               <SidebarMenuButton onClick={toggleNotifications}>
                 <Bell />

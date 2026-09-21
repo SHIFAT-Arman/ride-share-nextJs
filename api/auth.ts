@@ -7,6 +7,7 @@ export interface SessionUser {
   sub: string;
   email: string;
   role: UserRole;
+  availableRoles: UserRole[];
 }
 
 export interface LoginRequest {
@@ -21,6 +22,15 @@ export interface LoginResponse {
   email: string;
 }
 
+export type ApplyAsDriverRequest = {
+  firstName: string;
+  lastName: string;
+  phone: string;
+  vehicleType: "CAR" | "BIKE" | "CAR_XL";
+  licensePlate: string;
+  seatingCapacity: number;
+};
+
 /** Shared auth helpers used by every portal role. */
 export const authApi = {
   login: (data: LoginRequest) => api.post<LoginResponse>("/auth/login", data),
@@ -33,6 +43,14 @@ export const authApi = {
   /** Returns the signed-in user from the JWT (sub, email, role). */
   me: (config?: AxiosRequestConfig) =>
     api.get<SessionUser>("/auth/me", config),
+
+  /** Rider → driver upgrade (same account + vehicle); re-issues cookies. */
+  applyAsDriver: (data: ApplyAsDriverRequest) =>
+    api.post<LoginResponse>("/auth/register/driver", data),
+
+  /** Flip active dashboard mode; re-issues cookies. */
+  switchRole: (role: "rider" | "driver") =>
+    api.post<LoginResponse>("/auth/switch-role", { role }),
 };
 
 /** Map a role to its portal dashboard path. */
