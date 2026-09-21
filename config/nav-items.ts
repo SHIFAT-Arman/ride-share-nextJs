@@ -43,6 +43,11 @@ const RIDER_NAV: PortalNavItem[] = [
     href: "/book-a-ride",
     icon: MapPinned,
   },
+  {
+    title: "Become a driver",
+    href: "/portal/rider/apply-driver",
+    icon: Car,
+  },
 ];
 
 const DRIVER_NAV: PortalNavItem[] = [

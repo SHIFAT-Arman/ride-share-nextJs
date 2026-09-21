@@ -90,15 +90,13 @@ export const adminApi = {
     api.get<Admin>(`/admin/get-admin-by-id/${id}`, config),
 
   uploadProfilePicture: (id: string, formData: FormData) =>
-    api.put(`/admin/${id}/profile-picture`, formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    }),
-
-  getProfilePicture: () =>
-    api.get<Blob>(`/admin/profile-picture`, { responseType: "blob" }),
-
-  getProfilePictureById: (id: string) =>
-    api.get<Blob>(`/admin/${id}/profile-picture`, { responseType: "blob" }),
+    api.put<{ profilePictureUrl: string }>(
+      `/admin/${id}/profile-picture`,
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      },
+    ),
 
   deleteAdmin: (id: string) => api.delete(`/admin/delete-admin/${id}`),
 
