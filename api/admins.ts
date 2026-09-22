@@ -57,7 +57,8 @@ export interface EmailResponse {
 }
 
 export const adminApi = {
-  me: () => api.get("/admin/get-admin-by-id"),
+  me: (config?: AxiosRequestConfig) =>
+    api.get<Admin>("/admin/get-admin-by-id", config),
 
   create: (data: CreateRequest) =>
     api.post<Admin>("/auth/register/admin", data),

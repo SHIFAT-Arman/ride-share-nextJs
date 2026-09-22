@@ -54,12 +54,7 @@ export const authApi = {
 };
 
 /** Map a role to its portal dashboard path. */
-export const dashboardPathForRole = (role: string): string => {
-  if (role === "admin") return "/portal/admin/dashboard";
-  if (role === "rider") return "/portal/rider/dashboard";
-  if (role === "driver") return "/portal/driver/dashboard";
-  return "/login";
-};
+export { dashboardPathForRole } from "../lib/marketing-nav";
 
 /** Map a role to its self-profile path. */
 export const profilePathForRole = (role: string): string => {

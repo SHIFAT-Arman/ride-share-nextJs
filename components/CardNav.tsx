@@ -1,10 +1,18 @@
 "use client";
-import React, { useLayoutEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 // use your own icon import if react-icons is not available
 import { GoArrowUpRight } from "react-icons/go";
 import Image from "next/image";
 import Link from "next/link";
+import { authApi, type SessionUser } from "@/api/auth";
+import { adminApi } from "@/api/admins";
+import { driverApi } from "@/api/drivers";
+import { riderApi } from "@/api/riders";
+import {
+  marketingNavCta,
+  portalLinksForSession,
+} from "@/lib/marketing-nav";
 
 export type CardNavLink = {
   label: string;
@@ -44,6 +52,61 @@ const CardNav: React.FC<CardNavProps> = ({
 }) => {
   const [isHamburgerOpen, setIsHamburgerOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [menuItems, setMenuItems] = useState(items);
+  const [cta, setCta] = useState<{ label: string; href: string } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const quiet = { skipAuthRedirect: true };
+
+    async function profileName(session: SessionUser) {
+      if (session.role === "admin") {
+        const { data } = await adminApi.me(quiet);
+        return `${data.firstName} ${data.lastName}`;
+      }
+      if (session.role === "rider") {
+        const { data } = await riderApi.getById(session.sub, quiet);
+        return `${data.firstName} ${data.lastName}`;
+      }
+      if (session.role === "driver") {
+        const { data } = await driverApi.getById(session.sub, quiet);
+        return `${data.firstName} ${data.lastName}`;
+      }
+      return null;
+    }
+
+    async function load() {
+      try {
+        const { data: session } = await authApi.me(quiet);
+        if (cancelled) return;
+        let name: string | null = null;
+        try {
+          name = await profileName(session);
+        } catch {
+          name = null;
+        }
+        if (cancelled) return;
+        const next = marketingNavCta(session, name);
+        setCta(next);
+        setMenuItems(
+          items.map((item) =>
+            item.label === "Portal"
+              ? { ...item, links: portalLinksForSession(next.href) }
+              : item,
+          ),
+        );
+      } catch {
+        if (cancelled) return;
+        setCta(marketingNavCta(null, null));
+        setMenuItems(items);
+      }
+    }
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [items]);
   const navRef = useRef<HTMLDivElement | null>(null);
   const cardsRef = useRef<HTMLDivElement[]>([]);
   const tlRef = useRef<gsap.core.Timeline | null>(null);
@@ -115,7 +178,7 @@ const CardNav: React.FC<CardNavProps> = ({
       tl?.kill();
       tlRef.current = null;
     };
-  }, [ease, items]);
+  }, [ease, menuItems]);
 
   useLayoutEffect(() => {
     const handleResize = () => {
@@ -212,13 +275,20 @@ const CardNav: React.FC<CardNavProps> = ({
             </Link>
           </div>
 
-          <Link
-            href="/login"
-            className="card-nav-cta-button hidden md:inline-flex border-0 rounded-[calc(0.75rem-0.2rem)] px-4 items-center h-full font-medium cursor-pointer transition-colors duration-300"
-            style={{ backgroundColor: buttonBgColor, color: buttonTextColor }}
-          >
-            Login
-          </Link>
+          {cta ? (
+            <Link
+              href={cta.href}
+              className="card-nav-cta-button hidden md:inline-flex border-0 rounded-[calc(0.75rem-0.2rem)] px-4 items-center h-full max-w-[11rem] font-medium cursor-pointer transition-colors duration-300"
+              style={{ backgroundColor: buttonBgColor, color: buttonTextColor }}
+            >
+              <span className="truncate">{cta.label}</span>
+            </Link>
+          ) : (
+            <span
+              className="card-nav-cta-button hidden md:inline-block h-full w-16"
+              aria-hidden="true"
+            />
+          )}
         </div>
 
         <div
@@ -229,7 +299,7 @@ const CardNav: React.FC<CardNavProps> = ({
           } md:flex-row md:items-end md:gap-[12px]`}
           aria-hidden={!isExpanded}
         >
-          {(items || []).slice(0, 3).map((item, idx) => (
+          {(menuItems || []).slice(0, 3).map((item, idx) => (
             <div
               key={`${item.label}-${idx}`}
               className="nav-card select-none relative flex flex-col gap-2 p-[12px_16px] rounded-[calc(0.75rem-0.2rem)] min-w-0 flex-[1_1_auto] h-auto min-h-[60px] md:h-full md:min-h-0 md:flex-[1_1_0%]"
