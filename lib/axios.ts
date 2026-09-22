@@ -1,5 +1,12 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
 
+declare module "axios" {
+  interface AxiosRequestConfig {
+    /** 401 still refreshes. Failure does not logout or send the browser to /login. */
+    skipAuthRedirect?: boolean;
+  }
+}
+
 const baseURL =
   typeof window === "undefined"
     ? process.env.API_URL
@@ -13,7 +20,10 @@ const api = axios.create({
   withCredentials: true,
 });
 
-type RetriableConfig = InternalAxiosRequestConfig & { _retry?: boolean };
+type RetriableConfig = InternalAxiosRequestConfig & {
+  _retry?: boolean;
+  skipAuthRedirect?: boolean;
+};
 
 let refreshPromise: Promise<unknown> | null = null;
 
@@ -64,7 +74,7 @@ api.interceptors.response.use(
         await refreshSession();
         return api(config);
       } catch {
-        await clearSessionAndGoLogin();
+        if (!config.skipAuthRedirect) await clearSessionAndGoLogin();
         return Promise.reject(err);
       }
     }
@@ -73,7 +83,8 @@ api.interceptors.response.use(
       err.response?.status === 401 &&
       typeof window !== "undefined" &&
       !isAuthForm &&
-      !onPublicPage
+      !onPublicPage &&
+      !config?.skipAuthRedirect
     ) {
       await clearSessionAndGoLogin();
     }
