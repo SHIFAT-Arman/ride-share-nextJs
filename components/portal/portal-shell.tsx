@@ -102,21 +102,20 @@ function PortalShellInner({ children }: { children: React.ReactNode }) {
         setAvailableRoles(session.availableRoles ?? [session.role]);
         setUserId(session.sub);
         setEmail(session.email);
+        setName(session.name?.trim() ?? "");
+        setIsLoading(false);
 
         if (session.role === "admin") {
           const { data: admin } = await adminApi.me();
           if (cancelled) return;
-          setName(`${admin.firstName} ${admin.lastName}`);
           setPfpUrl(pictureSrc(admin.profilePictureUrl ?? null) ?? null);
         } else if (session.role === "rider") {
           const { data: rider } = await riderApi.getById(session.sub);
           if (cancelled) return;
-          setName(`${rider.firstName} ${rider.lastName}`);
           setPfpUrl(pictureSrc(rider.profilePictureUrl ?? null) ?? null);
         } else if (session.role === "driver") {
           const { data: driver } = await driverApi.getById(session.sub);
           if (cancelled) return;
-          setName(`${driver.firstName} ${driver.lastName}`);
           setPfpUrl(pictureSrc(driver.profilePictureUrl ?? null) ?? null);
         }
       } catch {

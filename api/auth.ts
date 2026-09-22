@@ -8,6 +8,7 @@ export interface SessionUser {
   email: string;
   role: UserRole;
   availableRoles: UserRole[];
+  name: string | null;
 }
 
 export interface LoginRequest {
