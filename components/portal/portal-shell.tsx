@@ -36,6 +36,9 @@ import {
   SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarProvider,
   SidebarRail,
   SidebarTrigger,
@@ -280,6 +283,25 @@ function PortalShellInner({ children }: { children: React.ReactNode }) {
                       <item.icon />
                       <span>{item.title}</span>
                     </SidebarMenuButton>
+                    {item.children?.length ? (
+                      <SidebarMenuSub>
+                        {item.children.map((child) => (
+                          <SidebarMenuSubItem key={child.href}>
+                            <SidebarMenuSubButton
+                              render={<Link href={child.href} />}
+                              isActive={portalNavActive(
+                                pathname,
+                                child.href,
+                                nav,
+                              )}
+                            >
+                              <child.icon />
+                              <span>{child.title}</span>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    ) : null}
                   </SidebarMenuItem>
                 ))}
               </SidebarMenu>
