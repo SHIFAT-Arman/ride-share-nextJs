@@ -3,6 +3,8 @@ import {
   LayoutDashboard,
   MapPinned,
   Megaphone,
+  Quote,
+  Sparkles,
   UserRound,
   Users,
   type LucideIcon,
@@ -14,6 +16,7 @@ export type PortalNavItem = {
   title: string;
   href: string;
   icon: LucideIcon;
+  children?: PortalNavItem[];
 };
 
 const ADMIN_NAV: PortalNavItem[] = [
@@ -29,6 +32,18 @@ const ADMIN_NAV: PortalNavItem[] = [
     title: "Announcements",
     href: "/portal/admin/announcement",
     icon: Megaphone,
+  },
+  {
+    title: "Marketing",
+    href: "/portal/admin/marketing",
+    icon: Sparkles,
+    children: [
+      {
+        title: "Testimonials",
+        href: "/portal/admin/marketing/testimonials",
+        icon: Quote,
+      },
+    ],
   },
 ];
 
