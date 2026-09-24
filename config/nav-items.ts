@@ -1,4 +1,5 @@
 import {
+  CircleHelp,
   Car,
   LayoutDashboard,
   MapPinned,
@@ -42,6 +43,11 @@ const ADMIN_NAV: PortalNavItem[] = [
         title: "Testimonials",
         href: "/portal/admin/marketing/testimonials",
         icon: Quote,
+      },
+      {
+        title: "FAQ",
+        href: "/portal/admin/marketing/faqs",
+        icon: CircleHelp,
       },
     ],
   },
