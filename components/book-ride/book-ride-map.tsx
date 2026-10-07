@@ -10,10 +10,19 @@ import { authApi, dashboardPathForRole } from "@/api/auth";
 import { locationApi, type PlaceResult } from "@/api/location";
 import {
   rideApi,
+  type Ride,
   type RideEstimate,
   type VehicleType,
 } from "@/api/rides";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
 const FALLBACK_PICKUP = {
@@ -41,6 +50,15 @@ function apiErrorMessage(err: unknown, fallback: string): string {
   return fallback;
 }
 
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-baseline justify-between gap-4 border-b pb-2 last:border-0 last:pb-0">
+      <span className="text-muted-foreground shrink-0">{label}</span>
+      <span className="truncate text-right font-medium">{value}</span>
+    </div>
+  );
+}
+
 type Pickup = {
   latitude: number;
   longitude: number;
@@ -66,8 +84,7 @@ export default function BookRideMap() {
   const [searching, setSearching] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [bookedRideId, setBookedRideId] = useState<string | null>(null);
-  const [bookedStatus, setBookedStatus] = useState<string | null>(null);
+  const [bookedRide, setBookedRide] = useState<Ride | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -90,7 +107,7 @@ export default function BookRideMap() {
   }, [router]);
 
   useEffect(() => {
-    if (!ready || bookedRideId || !mapEl.current) return;
+    if (!ready || bookedRide || !mapEl.current) return;
 
     let cancelled = false;
     fixLeafletDefaultIcon();
@@ -137,7 +154,7 @@ export default function BookRideMap() {
       destMarker.current = null;
       routeLine.current = null;
     };
-  }, [ready, bookedRideId]);
+  }, [ready, bookedRide]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -261,8 +278,7 @@ export default function BookRideMap() {
         },
         vehicleType,
       });
-      setBookedRideId(data.id);
-      setBookedStatus(data.status);
+      setBookedRide(data);
     } catch (err: unknown) {
       setError(
         apiErrorMessage(
@@ -283,23 +299,65 @@ export default function BookRideMap() {
     );
   }
 
-  if (bookedRideId) {
-    const searching = bookedStatus === "SEARCHING";
+  if (bookedRide) {
+    const looking = bookedRide.status === "SEARCHING";
     return (
-      <div className="mx-auto flex min-h-[70vh] max-w-md flex-col items-center justify-center gap-4 px-4 pt-24 text-center">
-        <h1 className="text-2xl font-semibold">
-          {searching ? "Looking for a driver…" : "Driver assigned"}
-        </h1>
-        <p className="text-muted-foreground text-sm">
-          Ride <span className="font-mono text-xs">{bookedRideId}</span>
-          {bookedStatus ? ` · ${bookedStatus}` : ""}
-        </p>
-        <Button render={<Link href={`/portal/rider/ride/${bookedRideId}`} />}>
-          Track ride
-        </Button>
-        <Button variant="outline" render={<Link href="/portal/rider/dashboard" />}>
-          Dashboard
-        </Button>
+      <div className="mx-auto flex min-h-[70vh] max-w-md flex-col justify-center px-4 pt-24 pb-10">
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              {looking ? "Looking for a driver…" : "Driver assigned"}
+            </CardTitle>
+            <CardDescription>
+              Ride{" "}
+              <span className="font-mono text-xs">{bookedRide.id}</span>
+              {" · "}
+              {bookedRide.status}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-3 text-sm">
+            <Row label="Pickup" value={bookedRide.pickupAddress} />
+            <Row label="Destination" value={bookedRide.destinationAddress} />
+            <Row label="Vehicle" value={bookedRide.vehicleType} />
+            <Row
+              label="Fare"
+              value={
+                bookedRide.estimatedFare != null
+                  ? `৳${bookedRide.estimatedFare}`
+                  : "—"
+              }
+            />
+            <Row
+              label="Distance"
+              value={
+                bookedRide.estimatedDistanceInKm != null
+                  ? `${bookedRide.estimatedDistanceInKm} km`
+                  : "—"
+              }
+            />
+            <Row
+              label="ETA"
+              value={
+                bookedRide.estimatedDurationInMinutes != null
+                  ? `~${bookedRide.estimatedDurationInMinutes} min`
+                  : "—"
+              }
+            />
+          </CardContent>
+          <CardFooter className="flex flex-wrap gap-2">
+            <Button
+              render={<Link href={`/portal/rider/ride/${bookedRide.id}`} />}
+            >
+              Track ride
+            </Button>
+            <Button
+              variant="outline"
+              render={<Link href="/portal/rider/dashboard" />}
+            >
+              Dashboard
+            </Button>
+          </CardFooter>
+        </Card>
       </div>
     );
   }
@@ -318,122 +376,134 @@ export default function BookRideMap() {
         className="z-0 h-[min(55vh,420px)] w-full overflow-hidden rounded-xl border"
       />
 
-      <div className="relative flex flex-col gap-2">
-        <label className="text-sm font-medium" htmlFor="dest-search">
-          Destination
-        </label>
-        <Input
-          id="dest-search"
-          value={query}
-          onChange={(e) => {
-            const v = e.target.value;
-            setQuery(v);
-            if (destination && v !== destination.address) {
-              setDestination(null);
+      <Card>
+        <CardHeader>
+          <CardTitle>Trip details</CardTitle>
+          <CardDescription>
+            Choose where you are going and how you want to ride.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <div className="relative flex flex-col gap-2">
+            <label className="text-sm font-medium" htmlFor="dest-search">
+              Destination
+            </label>
+            <Input
+              id="dest-search"
+              value={query}
+              onChange={(e) => {
+                const v = e.target.value;
+                setQuery(v);
+                if (destination && v !== destination.address) {
+                  setDestination(null);
+                }
+              }}
+              placeholder="Search place…"
+              autoComplete="off"
+            />
+            {searching && (
+              <p className="text-muted-foreground text-xs">Searching…</p>
+            )}
+            {results.length > 0 && (
+              <ul className="absolute top-full z-10 mt-1 max-h-48 w-full overflow-auto rounded-lg border bg-background shadow-md">
+                {results.map((r) => (
+                  <li key={`${r.latitude},${r.longitude},${r.address}`}>
+                    <button
+                      type="button"
+                      className="hover:bg-muted w-full px-3 py-2 text-left text-sm"
+                      onClick={() => {
+                        setDestination(r);
+                        setQuery(r.address);
+                        setResults([]);
+                      }}
+                    >
+                      {r.address}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {destination && (
+            <p className="text-muted-foreground text-xs">
+              Going to: {destination.address}
+            </p>
+          )}
+
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant={vehicleType === "CAR" ? "default" : "outline"}
+              onClick={() => setVehicleType("CAR")}
+            >
+              Car
+            </Button>
+            <Button
+              type="button"
+              variant={vehicleType === "BIKE" ? "default" : "outline"}
+              onClick={() => setVehicleType("BIKE")}
+            >
+              Bike
+            </Button>
+          </div>
+
+          {estimating && (
+            <p className="text-muted-foreground flex items-center gap-2 text-sm">
+              <Loader2 className="size-4 animate-spin" /> Computing route…
+            </p>
+          )}
+
+          {estimate && !estimating && (
+            <div className="text-muted-foreground grid gap-1 text-sm sm:grid-cols-3">
+              <p>
+                Distance:{" "}
+                <span className="text-foreground font-medium">
+                  {estimate.estimatedDistanceInKm} km
+                </span>
+              </p>
+              <p>
+                ETA:{" "}
+                <span className="text-foreground font-medium">
+                  ~{estimate.estimatedDurationInMinutes} min
+                </span>
+              </p>
+              <p>
+                Fare:{" "}
+                <span className="text-foreground font-medium">
+                  ৳{estimate.estimatedFare}
+                </span>
+              </p>
+            </div>
+          )}
+
+          {error && <p className="text-destructive text-sm">{error}</p>}
+        </CardContent>
+        <CardFooter>
+          <Button
+            type="button"
+            size="lg"
+            className="w-full sm:w-auto"
+            disabled={
+              !pickup ||
+              !destination ||
+              !vehicleType ||
+              !estimate ||
+              estimating ||
+              submitting
             }
-          }}
-          placeholder="Search place…"
-          autoComplete="off"
-        />
-        {searching && (
-          <p className="text-muted-foreground text-xs">Searching…</p>
-        )}
-        {results.length > 0 && (
-          <ul className="absolute top-full z-10 mt-1 max-h-48 w-full overflow-auto rounded-lg border bg-background shadow-md">
-            {results.map((r) => (
-              <li key={`${r.latitude},${r.longitude},${r.address}`}>
-                <button
-                  type="button"
-                  className="hover:bg-muted w-full px-3 py-2 text-left text-sm"
-                  onClick={() => {
-                    setDestination(r);
-                    setQuery(r.address);
-                    setResults([]);
-                  }}
-                >
-                  {r.address}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      {destination && (
-        <p className="text-muted-foreground text-xs">
-          Going to: {destination.address}
-        </p>
-      )}
-
-      <div className="flex gap-2">
-        <Button
-          type="button"
-          variant={vehicleType === "CAR" ? "default" : "outline"}
-          onClick={() => setVehicleType("CAR")}
-        >
-          Car
-        </Button>
-        <Button
-          type="button"
-          variant={vehicleType === "BIKE" ? "default" : "outline"}
-          onClick={() => setVehicleType("BIKE")}
-        >
-          Bike
-        </Button>
-      </div>
-
-      {estimating && (
-        <p className="text-muted-foreground flex items-center gap-2 text-sm">
-          <Loader2 className="size-4 animate-spin" /> Computing route…
-        </p>
-      )}
-
-      {estimate && !estimating && (
-        <div className="text-muted-foreground grid gap-1 text-sm sm:grid-cols-3">
-          <p>
-            Distance:{" "}
-            <span className="text-foreground font-medium">
-              {estimate.estimatedDistanceInKm} km
-            </span>
-          </p>
-          <p>
-            ETA:{" "}
-            <span className="text-foreground font-medium">
-              ~{estimate.estimatedDurationInMinutes} min
-            </span>
-          </p>
-          <p>
-            Fare:{" "}
-            <span className="text-foreground font-medium">
-              ৳{estimate.estimatedFare}
-            </span>
-          </p>
-        </div>
-      )}
-
-      {error && <p className="text-destructive text-sm">{error}</p>}
-
-      <Button
-        type="button"
-        size="lg"
-        disabled={
-          !pickup ||
-          !destination ||
-          !vehicleType ||
-          !estimate ||
-          estimating ||
-          submitting
-        }
-        onClick={confirm}
-      >
-        {submitting ? (
-          <>
-            <Loader2 className="animate-spin" /> Booking…
-          </>
-        ) : (
-          "Confirm ride"
-        )}
-      </Button>
+            onClick={confirm}
+          >
+            {submitting ? (
+              <>
+                <Loader2 className="animate-spin" /> Booking…
+              </>
+            ) : (
+              "Confirm ride"
+            )}
+          </Button>
+        </CardFooter>
+      </Card>
     </div>
   );
 }
