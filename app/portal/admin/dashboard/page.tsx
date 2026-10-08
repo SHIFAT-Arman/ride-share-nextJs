@@ -4,7 +4,9 @@ import {
   type AnalyticsRange,
 } from "@/api/analytics";
 import { RatingHealthCard } from "@/components/portal/rating-health-card";
+import { RidesByHourChart } from "@/components/portal/rides-by-hour-chart";
 import { RidesOverTimeChart } from "@/components/portal/rides-over-time-chart";
+import { SignupsOverTimeChart } from "@/components/portal/signups-over-time-chart";
 import { StatCard } from "@/components/portal/stat-card";
 import { StatusFunnelChart } from "@/components/portal/status-funnel-chart";
 import { UserCountsPie } from "@/components/portal/user-counts-pie";
@@ -49,6 +51,8 @@ export default async function AdminDashboardPage({
       ridesByStatus,
       vehicleMix,
       ratingHealth,
+      ridesByHour,
+      signupsByDay,
       accounts,
     } = data;
 
@@ -112,12 +116,30 @@ export default async function AdminDashboardPage({
             value={kpis.pendingRiderVerifications.toLocaleString()}
           />
         </div>
+        <p className="-mt-2 flex gap-4 font-mono text-xs tracking-wide uppercase">
+          <Link
+            href="/portal/admin/drivers"
+            className="text-sky-400 hover:text-sky-300"
+          >
+            Drivers →
+          </Link>
+          <Link
+            href="/portal/admin/riders"
+            className="text-sky-400 hover:text-sky-300"
+          >
+            Riders →
+          </Link>
+        </p>
 
         <RidesOverTimeChart data={ridesByDay} />
         <StatusFunnelChart data={ridesByStatus} />
         <div className="grid gap-4 lg:grid-cols-2">
           <VehicleMixChart data={vehicleMix} />
           <RatingHealthCard data={ratingHealth} />
+        </div>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <RidesByHourChart data={ridesByHour} />
+          <SignupsOverTimeChart data={signupsByDay} />
         </div>
         <UserCountsPie counts={accounts} />
       </div>

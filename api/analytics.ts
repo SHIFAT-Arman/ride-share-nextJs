@@ -39,6 +39,8 @@ export type AdminAnalytics = {
     ratedShare: number;
     distribution: { score: number; count: number }[];
   };
+  ridesByHour: { hour: number; count: number }[];
+  signupsByDay: { date: string; riders: number; drivers: number }[];
   accounts: { admin: number; rider: number; driver: number };
 };
 
