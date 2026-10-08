@@ -2,9 +2,15 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import {
+  analyticsApi,
+  type AnalyticsRange,
+  type RiderAnalytics,
+} from "@/api/analytics";
 import { authApi } from "@/api/auth";
 import { riderApi, type Rider } from "@/api/riders";
 import { rideApi, type Ride } from "@/api/rides";
+import { StatCard } from "@/components/portal/stat-card";
 import {
   AccountSummaryCard,
   StatusCard,
@@ -12,9 +18,27 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
+const RANGES: AnalyticsRange[] = ["7d", "30d", "all"];
+
+function fmtMoney(n: number) {
+  return `৳${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+}
+
+function fmtKm(n: number | null) {
+  if (n == null) return "—";
+  return `${n.toLocaleString(undefined, { maximumFractionDigits: 1 })} km`;
+}
+
+function fmtMin(n: number | null) {
+  if (n == null) return "—";
+  return `${n.toLocaleString(undefined, { maximumFractionDigits: 0 })} min`;
+}
+
 export default function RiderDashboardPage() {
   const [rider, setRider] = useState<Rider | null>(null);
   const [active, setActive] = useState<Ride | null>(null);
+  const [analytics, setAnalytics] = useState<RiderAnalytics | null>(null);
+  const [range, setRange] = useState<AnalyticsRange>("30d");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -24,6 +48,16 @@ export default function RiderDashboardPage() {
       setActive(data);
     } catch {
       setActive(null);
+    }
+  }, []);
+
+  const loadAnalytics = useCallback(async (r: AnalyticsRange) => {
+    try {
+      const { data } = await analyticsApi.getMe({ range: r });
+      if (data.role === "rider") setAnalytics(data);
+      else setAnalytics(null);
+    } catch {
+      setAnalytics(null);
     }
   }, []);
 
@@ -41,9 +75,12 @@ export default function RiderDashboardPage() {
           return;
         }
 
-        const { data } = await riderApi.getById(session.sub);
+        const [riderRes] = await Promise.all([
+          riderApi.getById(session.sub),
+          loadAnalytics("30d"),
+        ]);
         if (cancelled) return;
-        setRider(data);
+        setRider(riderRes.data);
         await loadActive();
       } catch {
         if (!cancelled) setError("Could not load dashboard.");
@@ -56,7 +93,12 @@ export default function RiderDashboardPage() {
     return () => {
       cancelled = true;
     };
-  }, [loadActive]);
+  }, [loadActive, loadAnalytics]);
+
+  const onRange = (r: AnalyticsRange) => {
+    setRange(r);
+    void loadAnalytics(r);
+  };
 
   if (loading) {
     return (
@@ -83,6 +125,9 @@ export default function RiderDashboardPage() {
       </p>
     );
   }
+
+  const kpis = analytics?.kpis;
+  const mix = analytics?.vehicleMix ?? [];
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -112,6 +157,55 @@ export default function RiderDashboardPage() {
           </Button>
         </div>
       )}
+
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          {RANGES.map((r) => (
+            <Button
+              key={r}
+              size="sm"
+              variant={range === r ? "default" : "outline"}
+              onClick={() => onRange(r)}
+            >
+              {r === "all" ? "All" : r}
+            </Button>
+          ))}
+          <Link
+            href="/portal/rider/history"
+            className="ml-auto text-sm text-sky-400 underline-offset-4 hover:underline"
+          >
+            View history
+          </Link>
+        </div>
+
+        {kpis && (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <StatCard label="Completed" value={kpis.completedRides} />
+            <StatCard label="Cancelled" value={kpis.cancelledRides} />
+            <StatCard
+              label="Est. spend"
+              value={fmtMoney(kpis.estimatedSpend)}
+            />
+            <StatCard
+              label="Avg distance"
+              value={fmtKm(kpis.avgDistanceKm)}
+            />
+            <StatCard
+              label="Avg duration"
+              value={fmtMin(kpis.avgDurationMin)}
+            />
+          </div>
+        )}
+
+        {mix.length > 0 && (
+          <p className="text-sm text-sky-200/70">
+            Vehicle mix:{" "}
+            {mix
+              .map((m) => `${m.vehicleType.replaceAll("_", " ")} (${m.count})`)
+              .join(" · ")}
+          </p>
+        )}
+      </div>
 
       <div className="grid gap-6 md:grid-cols-2">
         <StatusCard status={rider.status} />

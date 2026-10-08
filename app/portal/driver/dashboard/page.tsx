@@ -2,6 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import {
+  analyticsApi,
+  type AnalyticsRange,
+  type DriverAnalytics,
+} from "@/api/analytics";
 import { authApi } from "@/api/auth";
 import { driverApi, type Driver, type DriverRating } from "@/api/drivers";
 import { locationApi } from "@/api/location";
@@ -11,6 +16,7 @@ import {
   type RideAssignedEvent,
 } from "@/lib/pusher-client";
 import { RatingsCard } from "@/components/portal/ratings-card";
+import { StatCard } from "@/components/portal/stat-card";
 import {
   AccountSummaryCard,
   StatusCard,
@@ -18,11 +24,27 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
+const RANGES: AnalyticsRange[] = ["7d", "30d", "all"];
+
+function fmtMoney(n: number) {
+  return `৳${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+}
+
+function fmtRating(n: number | null) {
+  if (n == null) return "—";
+  return n.toLocaleString(undefined, {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  });
+}
+
 export default function DriverDashboardPage() {
   const [driver, setDriver] = useState<Driver | null>(null);
   const [ratings, setRatings] = useState<DriverRating[]>([]);
   const [active, setActive] = useState<Ride | null>(null);
   const [searching, setSearching] = useState<Ride[]>([]);
+  const [analytics, setAnalytics] = useState<DriverAnalytics | null>(null);
+  const [range, setRange] = useState<AnalyticsRange>("30d");
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -42,6 +64,16 @@ export default function DriverDashboardPage() {
     }
   }, []);
 
+  const loadAnalytics = useCallback(async (r: AnalyticsRange) => {
+    try {
+      const { data } = await analyticsApi.getMe({ range: r });
+      if (data.role === "driver") setAnalytics(data);
+      else setAnalytics(null);
+    } catch {
+      setAnalytics(null);
+    }
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -56,7 +88,10 @@ export default function DriverDashboardPage() {
           return;
         }
 
-        const { data } = await driverApi.getById(session.sub);
+        const [{ data }] = await Promise.all([
+          driverApi.getById(session.sub),
+          loadAnalytics("30d"),
+        ]);
         if (cancelled) return;
         setDriver(data);
 
@@ -79,7 +114,7 @@ export default function DriverDashboardPage() {
     return () => {
       cancelled = true;
     };
-  }, [refreshRides]);
+  }, [refreshRides, loadAnalytics]);
 
   useEffect(() => {
     if (!driver?.id) return;
@@ -132,6 +167,11 @@ export default function DriverDashboardPage() {
     }
   };
 
+  const onRange = (r: AnalyticsRange) => {
+    setRange(r);
+    void loadAnalytics(r);
+  };
+
   if (loading) {
     return (
       <div className="mx-auto max-w-4xl space-y-6">
@@ -163,6 +203,8 @@ export default function DriverDashboardPage() {
   }
 
   if (!driver) return null;
+
+  const kpis = analytics?.kpis;
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -272,6 +314,37 @@ export default function DriverDashboardPage() {
       )}
 
       {error && <p className="text-sm text-red-300">{error}</p>}
+
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          {RANGES.map((r) => (
+            <Button
+              key={r}
+              size="sm"
+              variant={range === r ? "default" : "outline"}
+              onClick={() => onRange(r)}
+            >
+              {r === "all" ? "All" : r}
+            </Button>
+          ))}
+        </div>
+
+        {kpis && (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard label="Completed" value={kpis.completedRides} />
+            <StatCard label="Cancelled" value={kpis.cancelledRides} />
+            <StatCard
+              label="Est. earnings"
+              value={fmtMoney(kpis.estimatedEarnings)}
+            />
+            <StatCard
+              label="Avg rating"
+              value={fmtRating(kpis.averageRating)}
+              hint={`${kpis.ratingCount} rating${kpis.ratingCount === 1 ? "" : "s"}`}
+            />
+          </div>
+        )}
+      </div>
 
       <div className="grid gap-6 md:grid-cols-2">
         <StatusCard status={driver.status} />
