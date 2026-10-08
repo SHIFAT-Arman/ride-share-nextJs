@@ -10,6 +10,7 @@ import {
 import { authApi } from "@/api/auth";
 import { riderApi, type Rider } from "@/api/riders";
 import { rideApi, type Ride } from "@/api/rides";
+import { RidesOverTimeChart } from "@/components/portal/rides-over-time-chart";
 import { StatCard } from "@/components/portal/stat-card";
 import {
   AccountSummaryCard,
@@ -205,6 +206,8 @@ export default function RiderDashboardPage() {
               .join(" · ")}
           </p>
         )}
+
+        {analytics && <RidesOverTimeChart data={analytics.ridesByDay} />}
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">

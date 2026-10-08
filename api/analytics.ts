@@ -32,6 +32,13 @@ export type AdminAnalytics = {
   };
   ridesByDay: { date: string; count: number }[];
   ridesByStatus: { status: string; count: number }[];
+  vehicleMix: { vehicleType: string; count: number; estimatedFare: number }[];
+  ratingHealth: {
+    averageScore: number | null;
+    ratingCount: number;
+    ratedShare: number;
+    distribution: { score: number; count: number }[];
+  };
   accounts: { admin: number; rider: number; driver: number };
 };
 

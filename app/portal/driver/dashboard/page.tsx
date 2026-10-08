@@ -16,6 +16,7 @@ import {
   type RideAssignedEvent,
 } from "@/lib/pusher-client";
 import { RatingsCard } from "@/components/portal/ratings-card";
+import { RidesOverTimeChart } from "@/components/portal/rides-over-time-chart";
 import { StatCard } from "@/components/portal/stat-card";
 import {
   AccountSummaryCard,
@@ -344,6 +345,8 @@ export default function DriverDashboardPage() {
             />
           </div>
         )}
+
+        {analytics && <RidesOverTimeChart data={analytics.ridesByDay} />}
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">

@@ -3,10 +3,12 @@ import {
   analyticsApi,
   type AnalyticsRange,
 } from "@/api/analytics";
+import { RatingHealthCard } from "@/components/portal/rating-health-card";
 import { RidesOverTimeChart } from "@/components/portal/rides-over-time-chart";
 import { StatCard } from "@/components/portal/stat-card";
 import { StatusFunnelChart } from "@/components/portal/status-funnel-chart";
 import { UserCountsPie } from "@/components/portal/user-counts-pie";
+import { VehicleMixChart } from "@/components/portal/vehicle-mix-chart";
 import { serverAuthConfig } from "@/lib/server-auth";
 import { cn } from "@/lib/utils";
 
@@ -41,7 +43,14 @@ export default async function AdminDashboardPage({
 
   try {
     const { data } = await analyticsApi.getAdmin({ range }, auth);
-    const { kpis, ridesByDay, ridesByStatus, accounts } = data;
+    const {
+      kpis,
+      ridesByDay,
+      ridesByStatus,
+      vehicleMix,
+      ratingHealth,
+      accounts,
+    } = data;
 
     return (
       <div className="mx-auto max-w-6xl space-y-6">
@@ -106,6 +115,10 @@ export default async function AdminDashboardPage({
 
         <RidesOverTimeChart data={ridesByDay} />
         <StatusFunnelChart data={ridesByStatus} />
+        <div className="grid gap-4 lg:grid-cols-2">
+          <VehicleMixChart data={vehicleMix} />
+          <RatingHealthCard data={ratingHealth} />
+        </div>
         <UserCountsPie counts={accounts} />
       </div>
     );
