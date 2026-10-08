@@ -1,4 +1,5 @@
 import api from "../lib/axios";
+import type { PaginationResponse } from "@/types/pagination";
 
 export type VehicleType = "CAR" | "BIKE" | "CAR_XL";
 
@@ -48,6 +49,25 @@ export type Ride = {
   createdAt: string;
 };
 
+export type RideRating = {
+  id: string;
+  score: number;
+  comment: string | null;
+  rideId: string | null;
+  riderUserId?: string | null;
+  createdAt: string;
+};
+
+export type CreateRideRatingRequest = {
+  score: number;
+  comment?: string;
+};
+
+export type RideHistoryParams = {
+  limit?: number;
+  offset?: number;
+};
+
 export const rideApi = {
   estimate: (data: CreateRideRequest) =>
     api.post<RideEstimate>("/ride/estimate", data),
@@ -58,7 +78,16 @@ export const rideApi = {
 
   getSearching: () => api.get<Ride[]>("/ride/searching"),
 
+  getHistory: (params: RideHistoryParams = {}) =>
+    api.get<PaginationResponse<Ride>>("/ride/history", { params }),
+
   getById: (id: string) => api.get<Ride>(`/ride/${id}`),
+
+  getRating: (id: string) =>
+    api.get<{ rating: RideRating | null }>(`/ride/${id}/rating`),
+
+  rate: (id: string, data: CreateRideRatingRequest) =>
+    api.post<RideRating>(`/ride/${id}/rate`, data),
 
   accept: (id: string) => api.post<Ride>(`/ride/${id}/accept`),
 

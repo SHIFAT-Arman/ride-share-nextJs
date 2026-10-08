@@ -1,6 +1,7 @@
 import {
   CircleHelp,
   Car,
+  History,
   LayoutDashboard,
   MapPinned,
   Megaphone,
@@ -65,6 +66,11 @@ const RIDER_NAV: PortalNavItem[] = [
     icon: MapPinned,
   },
   {
+    title: "History",
+    href: "/portal/rider/history",
+    icon: History,
+  },
+  {
     title: "Become a driver",
     href: "/portal/rider/apply-driver",
     icon: Car,
@@ -76,6 +82,11 @@ const DRIVER_NAV: PortalNavItem[] = [
     title: "Dashboard",
     href: "/portal/driver/dashboard",
     icon: LayoutDashboard,
+  },
+  {
+    title: "History",
+    href: "/portal/driver/history",
+    icon: History,
   },
 ];
 

@@ -7,7 +7,8 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Loader2 } from "lucide-react";
 import { authApi } from "@/api/auth";
-import { rideApi, type Ride } from "@/api/rides";
+import { rideApi, type Ride, type RideRating } from "@/api/rides";
+import { RateRideForm } from "@/components/portal/rate-ride-form";
 import { subscribeRideChannel } from "@/lib/pusher-client";
 import { Button } from "@/components/ui/button";
 
@@ -30,6 +31,7 @@ export default function RiderActiveRidePage() {
   const driverMarker = useRef<L.Marker | null>(null);
 
   const [ride, setRide] = useState<Ride | null>(null);
+  const [rating, setRating] = useState<RideRating | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -43,7 +45,16 @@ export default function RiderActiveRidePage() {
           return;
         }
         const { data } = await rideApi.getById(id);
-        if (!cancelled) setRide(data);
+        if (cancelled) return;
+        setRide(data);
+        if (data.status === "COMPLETED") {
+          try {
+            const ratingRes = await rideApi.getRating(id);
+            if (!cancelled) setRating(ratingRes.data.rating);
+          } catch {
+            if (!cancelled) setRating(null);
+          }
+        }
       } catch {
         if (!cancelled) setError("Could not load ride.");
       }
@@ -52,6 +63,22 @@ export default function RiderActiveRidePage() {
       cancelled = true;
     };
   }, [id, router]);
+
+  useEffect(() => {
+    if (!ride || ride.status !== "COMPLETED" || rating) return;
+    let cancelled = false;
+    void rideApi
+      .getRating(ride.id)
+      .then(({ data }) => {
+        if (!cancelled) setRating(data.rating);
+      })
+      .catch(() => {
+        /* ignore */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [ride?.id, ride?.status, rating]);
 
   useEffect(() => {
     if (!ride || !mapEl.current) return;
@@ -218,6 +245,14 @@ export default function RiderActiveRidePage() {
 
       {error && <p className="text-destructive text-sm">{error}</p>}
 
+      {ride.status === "COMPLETED" && ride.driverUserId ? (
+        <RateRideForm
+          rideId={ride.id}
+          existing={rating}
+          onRated={setRating}
+        />
+      ) : null}
+
       <div className="flex flex-wrap gap-2">
         {(ride.status === "SEARCHING" || ride.status === "ACCEPTED") && (
           <Button variant="destructive" disabled={busy} onClick={cancel}>
@@ -226,6 +261,9 @@ export default function RiderActiveRidePage() {
         )}
         <Button variant="outline" render={<Link href="/portal/rider/dashboard" />}>
           Dashboard
+        </Button>
+        <Button variant="outline" render={<Link href="/portal/rider/history" />}>
+          History
         </Button>
       </div>
     </div>
